@@ -1,0 +1,21 @@
+constant x = 'a';
+
+function getc() jas 
+{
+    IN;
+    IRETURN;
+}
+
+function putc(arg) jas
+{
+    ILOAD arg;
+    OUT;
+    BIPUSH 0;
+    IRETURN;
+}
+
+function __main__()
+{
+    putc(getc());
+    return 0;
+}

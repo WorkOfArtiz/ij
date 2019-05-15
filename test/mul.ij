@@ -1,0 +1,37 @@
+// the top bit
+constant top_bit = 31;
+
+// works by adding
+// O(1) multiplication
+function mul(x, y)
+{
+  var i;
+  var result = 0;
+  var bit = 1;
+  var sign = 0;
+
+  if (y < 0)
+  {
+    y = 0 - y;
+    sign = 1;
+  }
+
+  for (i = 0; i < top_bit; i += 1)
+  {
+    if (bit & y)
+      result += x;
+
+    x += x;
+    bit += bit;
+  }
+
+  if (sign)
+    result = 0 - result;
+
+  return result;
+}
+
+function __main__()
+{
+  return mul(3, 5) & 0;
+}

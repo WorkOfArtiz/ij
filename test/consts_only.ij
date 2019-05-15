@@ -1,0 +1,11 @@
+constant a = 1;
+constant b = 0x1;
+constant c = 'a';
+constant d = -1;
+constant e = -0x10;
+constant f = '\n';
+
+function __main__()
+{
+  return 0;
+}
