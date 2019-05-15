@@ -60,7 +60,7 @@ function mul(x, y)
 
   if (y < 0)
   {
-    y = 0 - y;
+    y = -y;
     sign = 1;
   }
 
@@ -74,7 +74,7 @@ function mul(x, y)
   }
 
   if (sign)
-    result = 0 - result;
+    result = -result;
 
   return result;
 }
