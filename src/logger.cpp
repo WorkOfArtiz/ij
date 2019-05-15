@@ -1,0 +1,82 @@
+#include "logger.hpp"
+#include <stdarg.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+/* Color definitions */
+#define COL_YELLOW "\033[33;1m"
+#define COL_BLUE   "\033[34;1m"
+#define COL_RED    "\033[31;1m"
+#define COL_GREEN  "\033[32;1m"
+#define COL_RST    "\033[0m"
+
+/* Log levels */
+const LogLevel log_info("INFO", COL_BLUE);
+const LogLevel log_succ("SUCC", COL_GREEN);
+const LogLevel log_warn("WARN", COL_YELLOW);
+const LogLevel log_err("ERR", COL_RED);
+
+/* define the global logger instance */
+Logger log;
+
+Logger::Logger(FILE *out, bool force_col)
+{
+    _out = out == nullptr ? stderr : out;
+    _col_enabled = (_out == stdout || _out == stderr || force_col);
+}
+
+Logger::~Logger()
+{
+    if (_out != stdout && _out != stderr)
+        fclose(_out);
+}
+
+void Logger::info(const char *fmt, ...)
+{
+    va_list args;
+
+    va_start(args, fmt);
+    log(log_info, fmt, args);
+    va_end(args);
+}
+
+void Logger::success(const char *fmt, ...)
+{
+    va_list args;
+
+    va_start(args, fmt);
+    log(log_succ, fmt, args);
+    va_end(args);
+}
+
+void Logger::warn(const char *fmt, ...)
+{
+    va_list args;
+
+    va_start(args, fmt);
+    log(log_warn, fmt, args);
+    va_end(args);
+}
+
+void Logger::panic(const char *fmt, ...)
+{
+    va_list args;
+
+    va_start(args, fmt);
+    log(log_err, fmt, args);
+    va_end(args);
+    exit(1);
+}
+
+// TODO add minimal log level system in here
+void Logger::log(const LogLevel &lvl, const char *fmt, va_list args)
+{
+    if (_col_enabled)
+        fprintf(_out, "[%s%s%s] ", lvl.color, lvl.name, COL_RST);
+    else
+        fprintf(_out, "[%s] ", lvl.name);
+
+    vfprintf(_out, fmt, args);
+    fprintf(_out, "\n");
+}
+
