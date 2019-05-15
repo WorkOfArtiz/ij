@@ -38,7 +38,8 @@ static void parse_options(int argc, char **argv, string &input, string &output, 
         std::string arg = argv[i];
         if (arg == "-h" || arg == "--help")
         {
-            std::cerr << "Usage: ./ij [options] inputfile" << std::endl
+            std::cerr << "Usage: ij [options] in.ij" << std::endl
+                << "   -o, --output   - output file (stdout by default)" << std::endl
                 << "   -S, --assembly - generates jas assembly, compiled otherwise" << std::endl
                 << "   -v, --verbose  - prints verbose info" << std::endl;
             exit(-1);
