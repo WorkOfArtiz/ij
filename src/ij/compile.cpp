@@ -182,7 +182,8 @@ void ForStmt::compile(Assembler &a, id_gen &gen) const
     std::string for_end = sprint("for%d_end", for_id);
 
     a.label(for_start);
-    initial->compile(a);
+    if (initial != nullptr)
+        initial->compile(a);
 
     a.label(for_condition);
     if (OpExpr *con = dynamic_cast<OpExpr *>(condition))
@@ -195,7 +196,7 @@ void ForStmt::compile(Assembler &a, id_gen &gen) const
             a.IFEQ(for_end);
         }
     }
-    else
+    else if (condition != nullptr)
     {
         condition->compile(a);
         a.IFEQ(for_end);
@@ -208,7 +209,8 @@ void ForStmt::compile(Assembler &a, id_gen &gen) const
     }
 
     a.label(for_update);
-    update->compile(a);
+    if (update != nullptr)
+        update->compile(a);
     a.GOTO(for_condition);
     a.label(for_end);
 }
@@ -261,6 +263,11 @@ void IfStmt::compile(Assembler &a, id_gen &gen) const
     a.label(if_end);
 }
 
+void LabelStmt::compile(Assembler &a, id_gen &) const
+{
+    a.label(label_name);
+}
+
 void JasStmt::compile(Assembler &a, id_gen &) const
 {
     switch (instr_type) 
@@ -290,6 +297,24 @@ void JasStmt::compile(Assembler &a, id_gen &) const
         case JasType::SWAP:          a.SWAP();               break;    
         case JasType::WIDE:          a.WIDE();               break;
     }
+}
+
+void BreakStmt::compile(Assembler &a, id_gen &gen) const
+{
+    if (gen.last_for() == -1)
+       log.panic("break outside for detected");
+
+    string label = sprint("for%d_end", gen.last_for());
+    a.GOTO(label); 
+}
+
+void ContinueStmt::compile(Assembler &a, id_gen &gen) const
+{
+    if (gen.last_for() == -1)
+       log.panic("break outside for detected");
+
+    string label = sprint("for%d_update", gen.last_for());
+    a.GOTO(label);
 }
 
 void Function::compile(Assembler &a) const

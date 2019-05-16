@@ -14,7 +14,11 @@
  *  - return statement
  *  - for statement
  *  - if statement
+ *  - continue statement (inside for)
+ *  - break statement (inside for)
  *  - just an expression
+ *  - jas statement (inside jas function)
+ *  - label statement (inside jas function)
  *
  * Expressions are:
  *  - Operator apply
@@ -22,14 +26,6 @@
  *  - function call
  *  - a direct value
  *
- * maybe i'll support an inline assembly expression later
- * with syntax like:
- *
- * var x = __asm__ {
- *    ILOAD a
- *    ILOAD b
- *    IADD
- * };
  */
 
 #ifndef ECDATA_H
@@ -46,9 +42,10 @@ struct id_gen
 {
     id_gen() : forid{0}, ifid{0} {}
 
-    size_t gfor() { return ++forid; }
-    size_t gif() { return ++ifid; }
-    size_t forid, ifid;
+    ssize_t last_for() { return forid - 1; }
+    ssize_t gfor() { return forid++; }
+    ssize_t gif() { return ifid++; }
+    ssize_t forid, ifid;
 };
 
 enum class ExprType
@@ -138,7 +135,10 @@ enum class StmtType
     ExprStmt,     /* expr */
     ForStmt,      /* (stmt, expr, stmt, stmts) */
     IfStmt,       /* (expr, stmts, stmts) */
-    JasStmt       /* only in jas functions, like DUP; */ 
+    LabelStmt,    /* (identifier) */
+    BreakStmt,    /* None */
+    ContinueStmt, /* None */ 
+    JasStmt,      /* only in jas functions, like DUP; */
 };
 
 struct Stmt
@@ -146,8 +146,8 @@ struct Stmt
     virtual StmtType type() const = 0;
     virtual void write(std::ostream &o) const = 0;
     virtual void compile(Assembler &a, id_gen &gen) const = 0;
-    virtual void find_vars(std::vector<std::string> &vec) const = 0;
-    virtual ~Stmt() = 0;
+    virtual void find_vars(std::vector<std::string> &vec) const;
+    virtual ~Stmt();
 
     static Stmt *gfor(Expr *initial, Expr *cond, Expr *update, std::vector<Stmt *> body);
     static Stmt *var(std::string identifier, Expr *e);
@@ -182,7 +182,6 @@ struct RetStmt : Stmt
  type() const;
     virtual void write(std::ostream &o) const;
     virtual void compile(Assembler &a, id_gen &gen) const;
-    virtual void find_vars(std::vector<std::string> &vec) const;
 
     Expr *expr;
 };
@@ -195,7 +194,6 @@ struct ExprStmt : Stmt
     virtual StmtType type() const;
     virtual void write(std::ostream &o) const;
     virtual void compile(Assembler &a, id_gen &gen) const;
-    virtual void find_vars(std::vector<std::string> &vec) const;
 
     Expr *expr;
 };
@@ -251,13 +249,39 @@ struct JasStmt : Stmt
     virtual StmtType type() const;
     virtual void write(std::ostream &o) const;
     virtual void compile(Assembler &a, id_gen &gen) const;
-    virtual void find_vars(std::vector<std::string> &vec) const;
     virtual ~JasStmt();
 
     std::string  op;
     JasType      instr_type;
     std::string  arg0;
     i32          iarg0;
+};
+
+struct LabelStmt : Stmt
+{
+    LabelStmt(string name);
+    virtual StmtType type() const;
+    virtual void write(std::ostream &o) const;
+    virtual void compile(Assembler &a, id_gen &gen) const;
+    virtual ~LabelStmt();
+
+    std::string label_name;
+};
+
+struct BreakStmt : Stmt
+{
+    virtual StmtType type() const;
+    virtual void write(std::ostream &o) const;
+    virtual void compile(Assembler &a, id_gen &gen) const;
+    virtual ~BreakStmt();
+};
+
+struct ContinueStmt : Stmt
+{
+    virtual StmtType type() const;
+    virtual void write(std::ostream &o) const;
+    virtual void compile(Assembler &a, id_gen &gen) const;
+    virtual ~ContinueStmt();
 };
 
 struct Function

@@ -39,6 +39,7 @@ std::ostream &operator<<(std::ostream &o, const Expr &e)
 Stmt *Stmt::gfor(Expr *initial, Expr *cond, Expr *update, std::vector<Stmt *> body) { return new ForStmt(initial, cond, update, body); }
 Stmt *Stmt::var(std::string identifier, Expr *e) { return new VarStmt(identifier, e); }
 Stmt *Stmt::expr(Expr *e) { return new ExprStmt(e); }
+void Stmt::find_vars(std::vector<std::string> &) const { return; }
 
 std::ostream &operator<<(std::ostream &o, const Stmt &e)
 {
@@ -57,6 +58,12 @@ StmtType ExprStmt::type() const { return StmtType::ExprStmt; }
 StmtType ForStmt::type()  const { return StmtType::ExprStmt; }
 StmtType IfStmt::type()   const { return StmtType::ExprStmt; }
 StmtType JasStmt::type()  const { return StmtType::JasStmt; }
+StmtType BreakStmt::type()  const { return StmtType::BreakStmt; }
+StmtType ContinueStmt::type()  const { return StmtType::ContinueStmt; }
+StmtType LabelStmt::type() const { return StmtType::LabelStmt; }
+
+/* Constructors */
+LabelStmt::LabelStmt(string label) : label_name{label} {}
 
 /* Free implementations */
 OpExpr::~OpExpr() { delete left; delete right; }
@@ -68,7 +75,10 @@ RetStmt::~RetStmt() { delete expr; }
 ExprStmt::~ExprStmt() { delete expr; }
 ForStmt::~ForStmt() { delete initial; delete condition; delete update; for (auto stmt : body) delete stmt; body.clear(); }
 IfStmt::~IfStmt() { delete condition; for (auto stmt : thens) delete stmt; for (auto stmt : elses) delete stmt; thens.clear(); elses.clear(); }
-JasStmt::~JasStmt() { }
+JasStmt::~JasStmt() {}
+BreakStmt::~BreakStmt() {}
+ContinueStmt::~ContinueStmt() {}
+LabelStmt::~LabelStmt() {}
 
 /* Write implementations */
 void OpExpr::write(std::ostream &o) const
@@ -135,6 +145,22 @@ void JasStmt::write(std::ostream &o) const
     o << ")";    
 }
 
+void BreakStmt::write(std::ostream &o) const
+{ 
+    o << "Break";
+}
+
+void ContinueStmt::write(std::ostream &o) const
+{ 
+    o << "Continue";
+}
+
+void LabelStmt::write(std::ostream &o) const
+{ 
+    o << "Label(" << label_name << ")";
+}
+
+
 void ExprStmt::write(std::ostream &o) const
 {
     o << "Stmt(" << *expr << ")";
@@ -142,9 +168,25 @@ void ExprStmt::write(std::ostream &o) const
 
 void ForStmt::write(std::ostream &o) const
 {
-    o << "ForStmt(" << *initial << ", " <<
-            *condition << ", " << *update << ") { ";
+    o << "ForStmt(init=";
+    if (initial)
+        o << *initial;
+    else
+        o << "empty";
+        
+    o << ", condition=";
+    if (condition)
+        o << *condition;
+    else 
+        o << "empty";
 
+    
+    o << ", update=";
+    
+    if (update) o << *update ;
+    else o << "empty";
+    
+    o << ") { ";
     for (Stmt *s : body)
         o << *s << "; ";
 
@@ -163,9 +205,6 @@ void IfStmt::write(std::ostream &o) const
 
 /* find_vars */
 void VarStmt::find_vars(std::vector<std::string> &vec) const { vec.push_back(identifier); }
-void RetStmt::find_vars(std::vector<std::string> &vec) const { (void) vec; }
-void ExprStmt::find_vars(std::vector<std::string> &vec) const { (void) vec; }
-void JasStmt::find_vars(std::vector<std::string> &vec) const {(void) vec;}
 void ForStmt::find_vars(std::vector<std::string> &vec) const { for (Stmt *s : body) s->find_vars(vec); }
 void IfStmt::find_vars(std::vector<std::string> &vec) const
 {

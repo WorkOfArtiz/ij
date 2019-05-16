@@ -54,7 +54,10 @@ Program *parse_program(Lexer &l)
     std::set<std::string> constants{{"main"}};
 
     l.set_skip({TokenType::Whitespace, TokenType::Nl, TokenType::Comment});
-    l.set_keywords({"constant", "function", "var", "for", "if", "else", "jas", "return"});
+    l.set_keywords({
+        "constant", "function", "var", "for", "if", "else", 
+        "label", "jas", "break", "continue", "return"
+    });
 
     while (l.has_token())
     {
@@ -123,10 +126,11 @@ static std::vector<Stmt *> parse_jas_block(Lexer &l)
     while (!l.is_next(TokenType::CurlyClose))
     {
         if (l.is_next(TokenType::SemiColon))
-            continue;
-        
-        if (l.is_next(TokenType::Keyword, "var"))
+            l.discard();
+        else if (l.is_next(TokenType::Keyword, "var"))
             stmts.push_back(parse_var_stmt(l));
+        else if (l.is_next(TokenType::Keyword, "label"))
+            stmts.push_back(parse_label_stmt(l));
         else
             stmts.push_back(parse_jas_stmt(l));
     }
@@ -182,6 +186,12 @@ Stmt *parse_statement(Lexer &l)  /* delegates to types of statements */
     if (l.is_next(TokenType::Keyword, "if"))
         return parse_if_stmt(l);
 
+    if (l.is_next(TokenType::Keyword, "break"))
+        return parse_break_stmt(l);
+    
+    if (l.is_next(TokenType::Keyword, "continue"))
+        return parse_continue_stmt(l);
+
     Stmt *s;
 
     if (!l.is_next(TokenType::Keyword))
@@ -223,13 +233,26 @@ Stmt *parse_ret_stmt(Lexer &l)   /* e.g. return x + x; */
 
 Stmt *parse_for_stmt(Lexer &l)   /* e.g. for (i = 0; i < 3; i += 1) stmt */
 {
+    Expr *init = nullptr;
+    Expr *condition = nullptr;
+    Expr *update = nullptr;
+
     expect(l, TokenType::Keyword, "for", true);
     expect(l, TokenType::BracesOpen, true);
-    Expr *init = parse_expr(l);
+
+    if (!l.is_next(TokenType::SemiColon))
+        init = parse_expr(l);
+    
     expect(l, TokenType::SemiColon, true);
-    Expr *condition = parse_expr(l);
+
+    if (!l.is_next(TokenType::SemiColon))
+        condition = parse_expr(l);
+    
     expect(l, TokenType::SemiColon, true);
-    Expr *update = parse_expr(l);
+    
+    if (!l.is_next(TokenType::SemiColon))
+        update = parse_expr(l);
+
     expect(l, TokenType::BracesClose, true);
     
     if (l.is_next(TokenType::CurlyOpen))
@@ -265,6 +288,34 @@ Stmt *parse_if_stmt(Lexer &l)    /* e.g. if (x) stmt */
     }
 
     return new IfStmt(condition, thens, elses);
+}
+
+Stmt *parse_break_stmt(Lexer &l) /* e.g. break */
+{
+    l.discard();
+    expect(l, TokenType::SemiColon, true);
+
+    return new BreakStmt;
+}
+
+Stmt *parse_continue_stmt(Lexer &l) /* e.g. continue */
+{
+    l.discard();
+    expect(l, TokenType::SemiColon, true);
+
+    return new ContinueStmt;
+}
+
+Stmt *parse_label_stmt(Lexer &l) /* e.g. label <name>: */
+{
+    log.info("Found label");
+
+    l.discard(); /* discard 'label' */
+    std::string label_name = l.get().value;
+
+    log.info("Label name %s", label_name.c_str());
+    expect(l, TokenType::Colon, true);
+    return new LabelStmt{label_name};
 }
 
 Stmt *parse_jas_stmt(Lexer &l)  /* e.g. INVOKEVIRTUAL func */
@@ -341,7 +392,6 @@ Stmt *parse_jas_stmt(Lexer &l)  /* e.g. INVOKEVIRTUAL func */
             break;
     }
 
-    expect(l, TokenType::SemiColon, true);
     return stmt;
 }
 
@@ -530,7 +580,15 @@ int32_t     parse_value(Lexer &l)
     switch (t.type)
     {
         case TokenType::Decimal: case TokenType::Hexadecimal:
-            value = std::stoi(t.value, nullptr, 0);
+            try 
+            {
+                value = std::stol(t.value, nullptr, 0);
+            } 
+            catch (std::out_of_range &r)
+            {
+                throw parse_error{t, "Couldn't parse this into int"};
+            }
+            
             break;
         case TokenType::Character_literal:
             if (t.value[1] == '\\')

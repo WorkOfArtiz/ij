@@ -35,6 +35,7 @@ enum class TokenType
     CurlyClose,
     Comma,
     SemiColon,
+    Colon,
     Nl,
     Comment
 };
