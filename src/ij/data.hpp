@@ -240,6 +240,8 @@ enum class JasType
     IN,        INVOKEVIRTUAL, IOR,     IRETURN,
     ISTORE,    ISUB,          LDC_W,   NOP,
     OUT,       POP,           SWAP,    WIDE,
+    NEWARRAY,  IALOAD,        IASTORE, NETBIND,
+    NETCONNECT,NETIN,         NETOUT,  NETCLOSE
 };
 
 extern const std::unordered_map<string, JasType> jas_type_mapping;

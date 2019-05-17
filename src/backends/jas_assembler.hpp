@@ -52,6 +52,16 @@ class JASAssembler : public Assembler
   virtual void INVOKEVIRTUAL(string func_name);
   virtual void IRETURN();
 
+  /* bonus extensions */
+  virtual void NEWARRAY();
+  virtual void IALOAD();
+  virtual void IASTORE();
+  virtual void NETBIND();
+  virtual void NETCONNECT();
+  virtual void NETIN();
+  virtual void NETOUT();
+  virtual void NETCLOSE();
+
   private:
   std::stringstream                   cs;
   std::set<string>                    accessible_vars;

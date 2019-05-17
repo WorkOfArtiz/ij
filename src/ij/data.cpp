@@ -1,7 +1,7 @@
 #include "data.hpp"
 #include "../util.hpp"
 
-const std::unordered_map<string, JasType> jas_type_mapping = 
+const std::unordered_map<string, JasType> jas_type_mapping =
 {
     {"BIPUSH",        JasType::BIPUSH},        {"DUP",           JasType::DUP},
     {"ERR",           JasType::ERR},           {"GOTO",          JasType::GOTO},
@@ -15,6 +15,11 @@ const std::unordered_map<string, JasType> jas_type_mapping =
     {"LDC_W",         JasType::LDC_W},         {"NOP",           JasType::NOP},
     {"OUT",           JasType::OUT},           {"POP",           JasType::POP},
     {"SWAP",          JasType::SWAP},          {"WIDE",          JasType::WIDE},
+    {"IF_ICMPEQ",     JasType::ICMPEQ},        {"NEWARRAY",      JasType::NEWARRAY},
+    {"IALOAD",        JasType::IALOAD},        {"IASTORE",       JasType::IASTORE},
+    {"NETBIND",       JasType::NETBIND},       {"NETCONNECT",    JasType::NETCONNECT},
+    {"NETIN",         JasType::NETIN},         {"NETOUT",        JasType::NETOUT},
+    {"NETCLOSE",      JasType::NETCLOSE},
 };
 
 /* Implement Expr Class */
@@ -123,17 +128,17 @@ void RetStmt::write(std::ostream &o) const
 void JasStmt::write(std::ostream &o) const
 {
     o << "JasStmt(" << op;
-    
+
     switch (instr_type)
     {
         case JasType::IINC:
-        case JasType::GOTO:         
-        case JasType::IFEQ:         
-        case JasType::IFLT:               
-        case JasType::ICMPEQ:               
-        case JasType::ILOAD:        
-        case JasType::INVOKEVIRTUAL: 
-        case JasType::ISTORE:           
+        case JasType::GOTO:
+        case JasType::IFEQ:
+        case JasType::IFLT:
+        case JasType::ICMPEQ:
+        case JasType::ILOAD:
+        case JasType::INVOKEVIRTUAL:
+        case JasType::ISTORE:
         case JasType::LDC_W:
             o << " " << arg0;
         default: break;
@@ -142,21 +147,21 @@ void JasStmt::write(std::ostream &o) const
     if (instr_type == JasType::BIPUSH || instr_type == JasType::IINC)
         o << " " << std::hex << iarg0;
 
-    o << ")";    
+    o << ")";
 }
 
 void BreakStmt::write(std::ostream &o) const
-{ 
+{
     o << "Break";
 }
 
 void ContinueStmt::write(std::ostream &o) const
-{ 
+{
     o << "Continue";
 }
 
 void LabelStmt::write(std::ostream &o) const
-{ 
+{
     o << "Label(" << label_name << ")";
 }
 
@@ -173,19 +178,19 @@ void ForStmt::write(std::ostream &o) const
         o << *initial;
     else
         o << "empty";
-        
+
     o << ", condition=";
     if (condition)
         o << *condition;
-    else 
+    else
         o << "empty";
 
-    
+
     o << ", update=";
-    
+
     if (update) o << *update ;
     else o << "empty";
-    
+
     o << ") { ";
     for (Stmt *s : body)
         o << *s << "; ";

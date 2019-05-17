@@ -72,6 +72,16 @@ class Assembler
     virtual void INVOKEVIRTUAL(string func_name) = 0;
     virtual void IRETURN() = 0;
 
+    /* bonus extensions */
+    virtual void NEWARRAY() = 0;
+    virtual void IALOAD() = 0;
+    virtual void IASTORE() = 0;
+    virtual void NETBIND() = 0;
+    virtual void NETCONNECT() = 0;
+    virtual void NETIN() = 0;
+    virtual void NETOUT() = 0;
+    virtual void NETCLOSE() = 0;
+    
 protected:
     std::unordered_map<string, i32> constant_map;
     std::vector<string>             constant_order;

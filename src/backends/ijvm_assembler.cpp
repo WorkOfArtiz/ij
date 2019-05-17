@@ -275,6 +275,48 @@ void IJVMAssembler::IRETURN()
   code.append<u8>(op_ireturn);
 }
 
+/* bonus extensions */
+void IJVMAssembler::NEWARRAY()
+{
+  code.append<u8>(op_newarray);
+}
+
+void IJVMAssembler::IALOAD()
+{
+  code.append<u8>(op_iaload);
+}
+
+void IJVMAssembler::IASTORE()
+{
+  code.append<u8>(op_iastore);
+}
+
+void IJVMAssembler::NETBIND()
+{
+  code.append<u8>(op_netbind);
+}
+
+void IJVMAssembler::NETCONNECT()
+{
+  code.append<u8>(op_netconnect);
+}
+
+void IJVMAssembler::NETIN()
+{
+  code.append<u8>(op_netin);
+}
+
+void IJVMAssembler::NETOUT()
+{
+  code.append<u8>(op_netout);
+}
+
+void IJVMAssembler::NETCLOSE()
+{
+  code.append<u8>(op_netclose);
+}
+
+
 void IJVMAssembler::link(std::unordered_map<string, u32> findexes)
 {
   /* first compile the jump instructions */

@@ -92,34 +92,11 @@ void JASAssembler::IFLT(string label){ cs << "    IFLT " << label << '\n'; }
 void JASAssembler::IFEQ(string label){ cs << "    IFEQ " << label << '\n'; }
 void JASAssembler::INVOKEVIRTUAL(string func_name){ cs << "    INVOKEVIRTUAL " << func_name << '\n'; }
 void JASAssembler::IRETURN(){ cs << "    IRETURN\n"; }
-
-#if 0
-int main(void)
-{
-    Assembler a;
-
-    a.constant("OBJREF", 0xdead1337);
-
-    /* define entry point */
-    a.label("starting_point");
-    a.LDC_W("OBJREF");
-    a.INVOKEVIRTUAL("_main");
-    a.POP();
-    a.HALT();
-
-    /* _main function */
-    a.function("_main", {});
-    for (char c : "hi there")
-    {
-        a.BIPUSH(c);
-        a.OUT();
-    }
-    a.BIPUSH(1);
-    a.IRETURN();
-
-    /* compiling to std::cout */
-    a.compile(std::cout);
-
-    return 0;
-}
-#endif
+void JASAssembler::NEWARRAY() { cs << "    NEWARRAY\n";}
+void JASAssembler::IALOAD() { cs << "    IALOAD\n";}
+void JASAssembler::IASTORE() { cs << "    IASTORE\n";}
+void JASAssembler::NETBIND() { cs << "    NETBIND\n";}
+void JASAssembler::NETCONNECT() { cs << "    NETCONNECT\n";}
+void JASAssembler::NETIN() { cs << "    NETIN\n";}
+void JASAssembler::NETOUT() { cs << "    NETOUT\n";}
+void JASAssembler::NETCLOSE() { cs << "    NETCLOSE\n";}
