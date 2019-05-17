@@ -138,13 +138,13 @@ template<> u16 buffer::reader::read(Endian e)
     if (_pos + 1 >= _b._size)
         throw std::runtime_error{"tried to read past end of buffer"};
 
-    union { u8 arr[2]; u16 val; } x = {_b[_pos], _b[_pos + 1]};
+    u16 x = *reinterpret_cast<const u16 *>(&_b[_pos]);
     _pos += 2;
 
     if (e != sys_endianess)
-        x.val = swap_endianess(x.val);
+        x = swap_endianess(x);
 
-    return x.val;
+    return x;
 }
 
 template<> i16 buffer::reader::read(Endian e)
@@ -157,13 +157,13 @@ template<> u32 buffer::reader::read(Endian e)
     if (_pos + 4 > _b._size)
         throw std::runtime_error{"tried to read past end of buffer"};
 
-    union { u8 arr[4]; u32 val; } x = {_b[_pos], _b[_pos + 1], _b[_pos + 2], _b[_pos + 3]};
+    u32 x = *reinterpret_cast<const u32 *>(&_b[_pos]);
     _pos += 4;
 
     if (e != sys_endianess)
-        x.val = swap_endianess(x.val);
+        x = swap_endianess(x);
 
-    return x.val;
+    return x;
 }
 
 template<> i32 buffer::reader::read(Endian e)
