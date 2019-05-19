@@ -503,7 +503,14 @@ Expr *parse_basic_expr(Lexer &l) /* e.g. a, 2, (1 + 3), f(1) */
         throw parse_error{n, "unknown expression"};
 
     if (minus)
-        return Expr::op("-", Expr::val(0), res);
+    {
+        log.info("Unary minus detected, negating value");
+
+        if (ValueExpr *v = dynamic_cast<ValueExpr *>(res))
+            v->value *= -1;
+        else
+            return Expr::op("-", Expr::val(0), res);
+    }
     return res;
 }
 
@@ -527,8 +534,6 @@ Expr *parse_fcall(std::string name, Lexer &l) {
 /* basic parts */
 std::string parse_identifier(Lexer &l) {
     Token &t = l.peek();
-
-    // log.info("Token %s", str(t).c_str());
 
     if (t.type != TokenType::Identifier)
         throw parse_error{t, "expected identifier"};
