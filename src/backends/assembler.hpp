@@ -15,8 +15,8 @@ using std::vector;
 
 class Assembler {
   public:
-    Assembler() {}  /* creates buffer for assembler to pile up stuff into */
-    ~Assembler() {} /* frees resources */
+    Assembler() {} /* creates buffer for assembler to pile up stuff into */
+    virtual ~Assembler() {} /* frees resources */
 
     /* Constant handling is done high level */
     void constant(string name, i32 value); /* adds/sets constant */

@@ -2,10 +2,8 @@
 
 class JASAssembler : public Assembler {
   public:
-    JASAssembler()
-        : _fn_declared{false} {
-    }                  /* creates buffer for assembler to pile up stuff into */
-    ~JASAssembler() {} /* frees resources */
+    JASAssembler();
+    virtual ~JASAssembler();
 
     /* high level API */
     virtual void compile(ostream &o); /* writes binary to ostream */

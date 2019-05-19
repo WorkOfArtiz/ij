@@ -39,8 +39,8 @@ const u8 op_netclose       = 0xE5;
 
 class IJVMAssembler : public Assembler {
   public:
-    IJVMAssembler();  /* creates buffer for assembler to pile up stuff into */
-    ~IJVMAssembler(); /* frees resources */
+    IJVMAssembler(); /* creates buffer for assembler to pile up stuff into */
+    virtual ~IJVMAssembler(); /* frees resources */
 
     /* high level API */
     virtual void compile(ostream &o); /* writes binary to ostream */

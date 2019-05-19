@@ -1,6 +1,9 @@
 #include <iostream>
 #include "jas_assembler.hpp"
 
+JASAssembler::JASAssembler() : _fn_declared{false} {}
+JASAssembler::~JASAssembler() {}
+
 void JASAssembler::compile(ostream &o) {
     if (!constant_order.empty())
         o << ".constant" << '\n';
