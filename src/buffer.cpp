@@ -10,28 +10,23 @@
  * Implementations of the append(type), since they're used in functions
  * below they have to be declared earlier
  ******************************************************************************/
-template <> void buffer::append<char>(char c, Endian e) {
-    (void)e; /* ignore endianess */
+template <> void buffer::append<char>(char c, Endian) {
     raw_append(reinterpret_cast<u8 *>(&c), sizeof(char));
 }
 
-template <> void buffer::append<const char *>(const char *c, Endian e) {
-    (void)e; /* ignore endianess */
+template <> void buffer::append<const char *>(const char *c, Endian) {
     raw_append(reinterpret_cast<const u8 *>(c), strlen(c));
 }
 
-template <> void buffer::append<const buffer &>(const buffer &b, Endian e) {
-    (void)e; /* ignore endianess */
+template <> void buffer::append<const buffer &>(const buffer &b, Endian) {
     raw_append(b._internal, b._size);
 }
 
-template <> void buffer::append<u8>(u8 v, Endian e) {
-    (void)e; /* ignore endianess */
+template <> void buffer::append<u8>(u8 v, Endian) {
     raw_append(&v, sizeof(u8));
 }
 
-template <> void buffer::append<i8>(i8 v, Endian e) {
-    (void)e; /* ignore endianess */
+template <> void buffer::append<i8>(i8 v, Endian) {
     raw_append(reinterpret_cast<u8 *>(&v), sizeof(i8));
 }
 
@@ -57,9 +52,10 @@ template <> void buffer::append<i32>(i32 v, Endian e) {
     append(static_cast<u32>(v), e);
 }
 
-template <> void buffer::write<u8>(u8 c, u32 offset, Endian e) {
-    (void)e; /* ignore endianess */
-
+/*
+ * Write implementations
+ */
+template <> void buffer::write<u8>(u8 c, u32 offset, Endian) {
     if (offset < _size)
         throw std::runtime_error{"Out of bounds"};
 
@@ -155,9 +151,6 @@ buffer::buffer(unsigned capacity) : _capacity{capacity}, _size{0} {
 
     if (!_internal)
         throw std::bad_alloc();
-
-    // std::cout << "buffer allocated :D" << std::endl;
-    // std::cout << reinterpret_cast<void *>(_internal) << std::endl;
 }
 
 buffer::buffer(const buffer &b) {
@@ -169,8 +162,6 @@ buffer::buffer(const buffer &b) {
 }
 
 buffer::~buffer() {
-    // std::cout << "buffer being freed :D" << std::endl;
-    // std::cout << reinterpret_cast<void *>(_internal) << std::endl;
     if (_internal != nullptr)
         free(_internal);
 }
@@ -286,9 +277,3 @@ void buffer::map_file(const char *file) {
     }
     fclose(input_file);
 }
-
-/*******************************************************************************
- * Implementations of append(type, endianess)
- ******************************************************************************/
-
-/* 8-bit types don't need to deal with endianess */
