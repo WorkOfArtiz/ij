@@ -219,40 +219,19 @@ struct IfStmt : Stmt {
     std::vector<Stmt *> elses;
 };
 
-enum class JasType {
-    BIPUSH,
-    DUP,
-    ERR,
-    GOTO,
-    HALT,
-    IADD,
-    IAND,
-    IFEQ,
-    IFLT,
-    ICMPEQ,
-    IINC,
-    ILOAD,
-    IN,
-    INVOKEVIRTUAL,
-    IOR,
-    IRETURN,
-    ISTORE,
-    ISUB,
-    LDC_W,
-    NOP,
-    OUT,
-    POP,
-    SWAP,
-    WIDE,
-    NEWARRAY,
-    IALOAD,
-    IASTORE,
-    NETBIND,
-    NETCONNECT,
-    NETIN,
-    NETOUT,
-    NETCLOSE
+// clang-format off
+enum class JasType
+{
+    BIPUSH,    DUP,           ERR,     GOTO,
+    HALT,      IADD,          IAND,    IFEQ,
+    IFLT,      ICMPEQ,        IINC,    ILOAD,
+    IN,        INVOKEVIRTUAL, IOR,     IRETURN,
+    ISTORE,    ISUB,          LDC_W,   NOP,
+    OUT,       POP,           SWAP,    WIDE,
+    NEWARRAY,  IALOAD,        IASTORE, NETBIND,
+    NETCONNECT,NETIN,         NETOUT,  NETCLOSE
 };
+// clang-format on
 
 extern const std::unordered_map<string, JasType> jas_type_mapping;
 
