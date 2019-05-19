@@ -13,26 +13,29 @@ using std::ostream;
 using std::string;
 using std::vector;
 
-class Assembler
-{
-    public:
+class Assembler {
+  public:
     Assembler() {}  /* creates buffer for assembler to pile up stuff into */
     ~Assembler() {} /* frees resources */
 
     /* Constant handling is done high level */
-    void constant(string name, i32 value);                 /* adds/sets constant */
-    bool is_constant(string name);                         /* asks if there is any constant with name */
-    
+    void constant(string name, i32 value); /* adds/sets constant */
+    bool is_constant(string name); /* asks if there is any constant with name */
+
     /* high level API */
-    virtual void compile(ostream &o) = 0;                  /* writes binary to ostream */
-    virtual void label(string name) = 0;                   /* adds label before next instruction */
+    virtual void compile(ostream &o) = 0; /* writes binary to ostream */
+    virtual void
+    label(string name) = 0; /* adds label before next instruction */
 
     /* ends previous function and adds new function */
-    virtual void function(string name, vector<string> args, vector<string> vars) = 0;
-    virtual bool is_var(string name) = 0; /* returns whether there is a variable in the current context (local and args) */
+    virtual void function(string name, vector<string> args,
+                          vector<string> vars) = 0;
+    virtual bool
+    is_var(string name) = 0; /* returns whether there is a variable in the
+                                current context (local and args) */
 
     /* pseudo instructions for commonly used shortcuts */
-	virtual void PUSH_VAL(i32 value);
+    virtual void PUSH_VAL(i32 value);
     virtual void SET_VAR(string var, i32 value);
     virtual void INC_VAR(string var, i32 value);
 
@@ -81,10 +84,10 @@ class Assembler
     virtual void NETIN() = 0;
     virtual void NETOUT() = 0;
     virtual void NETCLOSE() = 0;
-    
-protected:
+
+  protected:
     std::unordered_map<string, i32> constant_map;
-    std::vector<string>             constant_order;
+    std::vector<string> constant_order;
 };
 
 #endif

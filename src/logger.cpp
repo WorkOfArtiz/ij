@@ -5,10 +5,10 @@
 
 /* Color definitions */
 #define COL_YELLOW "\033[33;1m"
-#define COL_BLUE   "\033[34;1m"
-#define COL_RED    "\033[31;1m"
-#define COL_GREEN  "\033[32;1m"
-#define COL_RST    "\033[0m"
+#define COL_BLUE "\033[34;1m"
+#define COL_RED "\033[31;1m"
+#define COL_GREEN "\033[32;1m"
+#define COL_RST "\033[0m"
 
 /* Log levels */
 const LogLevel log_info("INFO", COL_BLUE);
@@ -19,20 +19,17 @@ const LogLevel log_err("ERR", COL_RED);
 /* define the global logger instance */
 Logger log;
 
-Logger::Logger(FILE *out, bool force_col)
-{
+Logger::Logger(FILE *out, bool force_col) {
     _out = out == nullptr ? stderr : out;
     _col_enabled = (_out == stdout || _out == stderr || force_col);
 }
 
-Logger::~Logger()
-{
+Logger::~Logger() {
     if (_out != stdout && _out != stderr)
         fclose(_out);
 }
 
-void Logger::info(const char *fmt, ...)
-{
+void Logger::info(const char *fmt, ...) {
     va_list args;
 
     va_start(args, fmt);
@@ -40,8 +37,7 @@ void Logger::info(const char *fmt, ...)
     va_end(args);
 }
 
-void Logger::success(const char *fmt, ...)
-{
+void Logger::success(const char *fmt, ...) {
     va_list args;
 
     va_start(args, fmt);
@@ -49,8 +45,7 @@ void Logger::success(const char *fmt, ...)
     va_end(args);
 }
 
-void Logger::warn(const char *fmt, ...)
-{
+void Logger::warn(const char *fmt, ...) {
     va_list args;
 
     va_start(args, fmt);
@@ -58,8 +53,7 @@ void Logger::warn(const char *fmt, ...)
     va_end(args);
 }
 
-void Logger::panic(const char *fmt, ...)
-{
+void Logger::panic(const char *fmt, ...) {
     va_list args;
 
     va_start(args, fmt);
@@ -69,8 +63,7 @@ void Logger::panic(const char *fmt, ...)
 }
 
 // TODO add minimal log level system in here
-void Logger::log(const LogLevel &lvl, const char *fmt, va_list args)
-{
+void Logger::log(const LogLevel &lvl, const char *fmt, va_list args) {
     if (_col_enabled)
         fprintf(_out, "[%s%s%s] ", lvl.color, lvl.name, COL_RST);
     else
@@ -79,4 +72,3 @@ void Logger::log(const LogLevel &lvl, const char *fmt, va_list args)
     vfprintf(_out, fmt, args);
     fprintf(_out, "\n");
 }
-

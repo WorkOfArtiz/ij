@@ -38,8 +38,7 @@
 
 class Program;
 
-struct id_gen
-{
+struct id_gen {
     id_gen() : forid{0}, ifid{0} {}
 
     ssize_t last_for() { return forid - 1; }
@@ -48,16 +47,14 @@ struct id_gen
     ssize_t forid, ifid;
 };
 
-enum class ExprType
-{
-    OpExpr,       /* (op, l_expr, r_expr) */
-    IdentExpr,    /* identifier */
-    ValueExpr,    /* value */
-    FuncExpr,     /* (fname, exprs) */
+enum class ExprType {
+    OpExpr,    /* (op, l_expr, r_expr) */
+    IdentExpr, /* identifier */
+    ValueExpr, /* value */
+    FuncExpr,  /* (fname, exprs) */
 };
 
-struct Expr
-{
+struct Expr {
     virtual ExprType type() const = 0;
     virtual void write(std::ostream &o) const = 0;
     virtual void compile(Assembler &a) const = 0;
@@ -73,8 +70,7 @@ struct Expr
 inline Expr::~Expr() {}
 std::ostream &operator<<(std::ostream &o, const Expr &e);
 
-struct OpExpr : Expr
-{
+struct OpExpr : Expr {
     OpExpr(std::string op, Expr *l, Expr *r) : op{op}, left{l}, right{r} {}
     virtual ~OpExpr();
 
@@ -90,8 +86,7 @@ struct OpExpr : Expr
     Expr *right;
 };
 
-struct IdentExpr : Expr
-{
+struct IdentExpr : Expr {
     IdentExpr(std::string identifier) : identifier{identifier} {}
     virtual ~IdentExpr();
 
@@ -102,8 +97,7 @@ struct IdentExpr : Expr
     std::string identifier;
 };
 
-struct ValueExpr : Expr
-{
+struct ValueExpr : Expr {
     ValueExpr(int32_t value) : value{value} {}
     virtual ~ValueExpr();
 
@@ -114,22 +108,20 @@ struct ValueExpr : Expr
     int32_t value;
 };
 
-struct FunExpr : Expr
-{
-    FunExpr(std::string name, std::vector<Expr *> args) :
-        fname{name}, args{args} {}
+struct FunExpr : Expr {
+    FunExpr(std::string name, std::vector<Expr *> args)
+        : fname{name}, args{args} {}
     virtual ~FunExpr();
 
     virtual ExprType type() const;
     virtual void write(std::ostream &o) const;
     virtual void compile(Assembler &a) const;
 
-    std::string               fname;
+    std::string fname;
     std::vector<Expr *> args;
 };
 
-enum class StmtType
-{
+enum class StmtType {
     VarStmt,      /* (identifier, expr) */
     RetStmt,      /* expr */
     ExprStmt,     /* expr */
@@ -137,19 +129,19 @@ enum class StmtType
     IfStmt,       /* (expr, stmts, stmts) */
     LabelStmt,    /* (identifier) */
     BreakStmt,    /* None */
-    ContinueStmt, /* None */ 
+    ContinueStmt, /* None */
     JasStmt,      /* only in jas functions, like DUP; */
 };
 
-struct Stmt
-{
+struct Stmt {
     virtual StmtType type() const = 0;
     virtual void write(std::ostream &o) const = 0;
     virtual void compile(Assembler &a, id_gen &gen) const = 0;
     virtual void find_vars(std::vector<std::string> &vec) const;
     virtual ~Stmt();
 
-    static Stmt *gfor(Expr *initial, Expr *cond, Expr *update, std::vector<Stmt *> body);
+    static Stmt *gfor(Expr *initial, Expr *cond, Expr *update,
+                      std::vector<Stmt *> body);
     static Stmt *var(std::string identifier, Expr *e);
     static Stmt *expr(Expr *e);
 };
@@ -158,10 +150,9 @@ inline Stmt::~Stmt() {}
 
 std::ostream &operator<<(std::ostream &o, const Stmt &e);
 
-struct VarStmt : Stmt
-{
-    VarStmt(std::string identifier, Expr *expr) :
-        identifier{identifier}, expr{expr} {}
+struct VarStmt : Stmt {
+    VarStmt(std::string identifier, Expr *expr)
+        : identifier{identifier}, expr{expr} {}
     virtual ~VarStmt();
 
     virtual StmtType type() const;
@@ -173,21 +164,18 @@ struct VarStmt : Stmt
     Expr *expr;
 };
 
-struct RetStmt : Stmt
-{
+struct RetStmt : Stmt {
     RetStmt(Expr *e) : expr{e} {}
     virtual ~RetStmt();
 
-    virtual StmtType
- type() const;
+    virtual StmtType type() const;
     virtual void write(std::ostream &o) const;
     virtual void compile(Assembler &a, id_gen &gen) const;
 
     Expr *expr;
 };
 
-struct ExprStmt : Stmt
-{
+struct ExprStmt : Stmt {
     ExprStmt(Expr *e) : expr{e} {}
     virtual ~ExprStmt();
 
@@ -198,11 +186,10 @@ struct ExprStmt : Stmt
     Expr *expr;
 };
 
-struct ForStmt : Stmt
-{
+struct ForStmt : Stmt {
     ForStmt(Expr *initial, Expr *condition, Expr *update,
-    std::vector<Stmt *> body) :
-        initial{initial}, condition{condition}, update{update}, body{body} {}
+            std::vector<Stmt *> body)
+        : initial{initial}, condition{condition}, update{update}, body{body} {}
     virtual ~ForStmt();
 
     virtual StmtType type() const;
@@ -210,15 +197,15 @@ struct ForStmt : Stmt
     virtual void compile(Assembler &a, id_gen &gen) const;
     virtual void find_vars(std::vector<std::string> &vec) const;
 
-    Expr  *initial;
-    Expr  *condition;
-    Expr  *update;
+    Expr *initial;
+    Expr *condition;
+    Expr *update;
     std::vector<Stmt *> body;
 };
 
-struct IfStmt : Stmt
-{
-    IfStmt(Expr *condition, std::vector<Stmt *> thens, std::vector<Stmt *> elses)
+struct IfStmt : Stmt {
+    IfStmt(Expr *condition, std::vector<Stmt *> thens,
+           std::vector<Stmt *> elses)
         : condition{condition}, thens{thens}, elses{elses} {}
     virtual ~IfStmt();
 
@@ -232,35 +219,56 @@ struct IfStmt : Stmt
     std::vector<Stmt *> elses;
 };
 
-enum class JasType
-{
-    BIPUSH,    DUP,           ERR,     GOTO,
-    HALT,      IADD,          IAND,    IFEQ,
-    IFLT,      ICMPEQ,        IINC,    ILOAD,
-    IN,        INVOKEVIRTUAL, IOR,     IRETURN,
-    ISTORE,    ISUB,          LDC_W,   NOP,
-    OUT,       POP,           SWAP,    WIDE,
-    NEWARRAY,  IALOAD,        IASTORE, NETBIND,
-    NETCONNECT,NETIN,         NETOUT,  NETCLOSE
+enum class JasType {
+    BIPUSH,
+    DUP,
+    ERR,
+    GOTO,
+    HALT,
+    IADD,
+    IAND,
+    IFEQ,
+    IFLT,
+    ICMPEQ,
+    IINC,
+    ILOAD,
+    IN,
+    INVOKEVIRTUAL,
+    IOR,
+    IRETURN,
+    ISTORE,
+    ISUB,
+    LDC_W,
+    NOP,
+    OUT,
+    POP,
+    SWAP,
+    WIDE,
+    NEWARRAY,
+    IALOAD,
+    IASTORE,
+    NETBIND,
+    NETCONNECT,
+    NETIN,
+    NETOUT,
+    NETCLOSE
 };
 
 extern const std::unordered_map<string, JasType> jas_type_mapping;
 
-struct JasStmt : Stmt
-{
+struct JasStmt : Stmt {
     virtual StmtType type() const;
     virtual void write(std::ostream &o) const;
     virtual void compile(Assembler &a, id_gen &gen) const;
     virtual ~JasStmt();
 
-    std::string  op;
-    JasType      instr_type;
-    std::string  arg0;
-    i32          iarg0;
+    std::string op;
+    JasType instr_type;
+    std::string arg0;
+    i32 iarg0;
 };
 
-struct LabelStmt : Stmt
-{
+struct LabelStmt : Stmt {
     LabelStmt(string name);
     virtual StmtType type() const;
     virtual void write(std::ostream &o) const;
@@ -270,40 +278,34 @@ struct LabelStmt : Stmt
     std::string label_name;
 };
 
-struct BreakStmt : Stmt
-{
+struct BreakStmt : Stmt {
     virtual StmtType type() const;
     virtual void write(std::ostream &o) const;
     virtual void compile(Assembler &a, id_gen &gen) const;
     virtual ~BreakStmt();
 };
 
-struct ContinueStmt : Stmt
-{
+struct ContinueStmt : Stmt {
     virtual StmtType type() const;
     virtual void write(std::ostream &o) const;
     virtual void compile(Assembler &a, id_gen &gen) const;
     virtual ~ContinueStmt();
 };
 
-struct Function
-{
+struct Function {
     Function(std::string ident, std::vector<std::string> args,
-        std::vector<Stmt *> stmts, bool jas=false)
-            : name{ident}, args{args}, stmts{stmts}, jas{jas} {}
+             std::vector<Stmt *> stmts, bool jas = false)
+        : name{ident}, args{args}, stmts{stmts}, jas{jas} {}
 
-    Function(Function &&other) : name{other.name}, args{other.args}
-    {
+    Function(Function &&other) : name{other.name}, args{other.args} {
         stmts = std::move(other.stmts);
         other.stmts.clear();
     }
 
-    ~Function()
-    {
+    ~Function() {
         log.info("Function %s is being deleted", name.c_str());
 
-        while (!stmts.empty())
-        {
+        while (!stmts.empty()) {
             delete stmts.back();
             stmts.pop_back();
         }
@@ -312,26 +314,24 @@ struct Function
     std::vector<std::string> get_vars() const;
     void compile(Assembler &a) const;
 
-    std::string              name;
+    std::string name;
     std::vector<std::string> args;
-    std::vector<Stmt *>      stmts;
-    bool                     jas;
+    std::vector<Stmt *> stmts;
+    bool jas;
 };
 
 std::ostream &operator<<(std::ostream &o, const Function &f);
 
-struct Constant
-{
+struct Constant {
     Constant(std::string name, int32_t value) : name{name}, value{value} {}
 
     std::string name;
-    int32_t     value;
+    int32_t value;
 };
 
 std::ostream &operator<<(std::ostream &o, const Constant &c);
 
-struct Program
-{
+struct Program {
     std::vector<Function *> funcs;
     std::vector<Constant *> consts;
 
