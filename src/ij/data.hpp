@@ -36,7 +36,7 @@
 #include "../backends/assembler.hpp"
 #include "../logger.hpp"
 
-class Program;
+struct Program;
 
 struct id_gen {
     id_gen() : forid{0}, ifid{0} {}
