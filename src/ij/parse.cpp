@@ -361,8 +361,9 @@ Stmt *parse_jas_stmt(Lexer &l) /* e.g. INVOKEVIRTUAL func */
                     stmt->iarg0 = '\t';
                     break;
                 default:
-                    throw parse_error{t, "Unrecognised escape symbol \\" +
-                                             t.value[2]};
+                    throw parse_error{
+                        t, std::string("Unrecognised escape symbol \\")
+                               .append(&t.value[2])};
                 }
             } else
                 stmt->iarg0 = t.value[1];
@@ -585,7 +586,8 @@ int32_t parse_value(Lexer &l) {
                 break;
             default:
                 throw parse_error{t,
-                                  "Unrecognised escape symbol \\" + t.value[2]};
+                                  std::string("Unrecognised escape symbol \\")
+                                      .append(&t.value[2])};
             }
         } else
             value = t.value[1];

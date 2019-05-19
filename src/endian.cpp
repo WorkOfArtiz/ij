@@ -6,7 +6,7 @@ Endian determine_endianess() {
     union indicator {
         char array[4];
         i32 value;
-    } i = {1, 0, 0, 0};
+    } i = {{1, 0, 0, 0}};
 
     if (i.value == 1)
         return Endian::Little;

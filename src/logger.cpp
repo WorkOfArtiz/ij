@@ -63,7 +63,16 @@ void Logger::panic(const char *fmt, ...) {
 }
 
 // TODO add minimal log level system in here
-void Logger::log(const LogLevel &lvl, const char *fmt, va_list args) {
+
+// explain to the compiler that this function has a
+// format string and that we're not really into this
+// whole format string checking. See https://stackoverflow.com/a/36120843
+// for more information on this attribute.
+// Also note that we index 3 here because of 2 reasons:
+// 1. The format argument list starts at 1
+// 2. the logger class' this argument is implicitly added.
+__attribute__((__format__(__printf__, 3, 0))) void
+Logger::log(const LogLevel &lvl, const char *fmt, va_list args) {
     if (_col_enabled)
         fprintf(_out, "[%s%s%s] ", lvl.color, lvl.name, COL_RST);
     else

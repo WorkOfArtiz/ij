@@ -12,7 +12,7 @@ DEP=$(OBJ:.o=.dep)
 .PHONY: format clean
 
 ij: $(OBJ)
-	$(CXX) $(CPPFLAGS) $^ -o $@ -m64
+	$(CXX) $(CPPFLAGS) $^ -o $@ -m64 -lm -lstdc++
 
 -include $(DEP)
 
@@ -21,7 +21,7 @@ format:
 
 clean:
 	rm -rf $(OBJDIR) $(TARGET)
-
+	rm -f ij
 $(OBJDIR)/%.o: src/%.cpp
 	@# make directory if it doesnt exist, gcc cant do this :P
 	+@[ -d $(dir $@) ] || mkdir -p $(dir $@)
