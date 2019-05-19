@@ -1,6 +1,7 @@
 CPPFLAGS_WARN=-Wall -Wextra -Werror -Wformat=2 -Wcast-qual -Wcast-align -Wwrite-strings -Wfloat-equal -Wpointer-arith -Wpedantic
 CPPFLAGS=-std=gnu++1y -g -O2 -fomit-frame-pointer -fno-builtin-log $(CPPFLAGS_WARN)
 
+
 SRCDIR=src
 OBJDIR=obj
 
@@ -9,10 +10,18 @@ SRC=$(shell find src -name '*.cpp')
 OBJ=$(patsubst $(SRCDIR)/%.cpp, $(OBJDIR)/%.o, $(SRC))
 DEP=$(OBJ:.o=.dep)
 
-.PHONY: format clean
+.PHONY: asan msan format clean
 
 ij: $(OBJ)
 	$(CXX) $(CPPFLAGS) $^ -o $@ -m64 -lm -lstdc++
+
+asan: CXX=clang++
+asan: CPPFLAGS += -fsanitize=undefined,address
+asan: ij
+
+msan: CXX=clang++
+msan: CPPFLAGS += -fsanitize=undefined,memory
+msan: ij
 
 -include $(DEP)
 
