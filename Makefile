@@ -4,19 +4,25 @@ CPPFLAGS=-std=gnu++1y -g -O2 -fomit-frame-pointer -fno-builtin-log $(CPPFLAGS_WA
 SRCDIR=src
 OBJDIR=obj
 
+HEADERS=$(shell find src -name '*.hpp' -o -name '*.h')
 SRC=$(shell find src -name '*.cpp')
 OBJ=$(patsubst $(SRCDIR)/%.cpp, $(OBJDIR)/%.o, $(SRC))
 DEP=$(OBJ:.o=.dep)
+
+.PHONY: format clean
 
 ij: $(OBJ)
 	$(CXX) $(CPPFLAGS) $^ -o $@ -m64
 
 -include $(DEP)
 
-clean :
+format:
+	clang-format -i $(SRC) $(HEADERS)
+
+clean:
 	rm -rf $(OBJDIR) $(TARGET)
 
-$(OBJDIR)/%.o : src/%.cpp
+$(OBJDIR)/%.o: src/%.cpp
 	@# make directory if it doesnt exist, gcc cant do this :P
 	+@[ -d $(dir $@) ] || mkdir -p $(dir $@)
 	$(CXX) $(CPPFLAGS) -c -o $@ $^
