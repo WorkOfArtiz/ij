@@ -29,7 +29,16 @@ Logger::~Logger() {
         fclose(_out);
 }
 
+void Logger::toggle_info(bool enabled) { info_enabled = enabled; }
+
+void Logger::toggle_warn(bool enabled) { warn_enabled = enabled; }
+
+void Logger::toggle_success(bool enabled) { success_enabled = enabled; }
+
 void Logger::info(const char *fmt, ...) {
+    if (!info_enabled)
+        return;
+
     va_list args;
 
     va_start(args, fmt);
@@ -38,6 +47,9 @@ void Logger::info(const char *fmt, ...) {
 }
 
 void Logger::success(const char *fmt, ...) {
+    if (!success_enabled)
+        return;
+
     va_list args;
 
     va_start(args, fmt);
@@ -46,6 +58,9 @@ void Logger::success(const char *fmt, ...) {
 }
 
 void Logger::warn(const char *fmt, ...) {
+    if (!warn_enabled)
+        return;
+
     va_list args;
 
     va_start(args, fmt);

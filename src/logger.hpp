@@ -51,11 +51,16 @@ class Logger {
     void success(const char *fmt, ...);
     void panic(const char *fmt, ...);
 
+    void toggle_info(bool enabled);
+    void toggle_warn(bool enabled);
+    void toggle_success(bool enabled);
+
   private:
     void log(const LogLevel &lvl, const char *fmt, va_list args);
 
     FILE *_out;
     bool _col_enabled;
+    bool info_enabled, warn_enabled, success_enabled;
 };
 
 /* Global logger instance */
