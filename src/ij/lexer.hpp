@@ -16,12 +16,12 @@ using std::string;
  *   hexadecimals: 0x[a-fA-F\d]+
  *   character lits: "'" [ -~] "'"
  * - identifiers : [_A-Za-z]\w+
- * - operators: + - & | * / < > = and their extensions += -= &= |= *= /= <= >= ==
+ * - operators: + - & | * / < > = and their extensions += -= &= |= *= /= <= >=
+ * ==
  * - comments // bla
  */
 
-enum class TokenType
-{
+enum class TokenType {
     Decimal,
     Hexadecimal,
     Character_literal,
@@ -43,15 +43,20 @@ enum class TokenType
 /* make it printable */
 std::ostream &operator<<(std::ostream &o, const TokenType &t);
 
-struct Token
-{
-    Token(string value, TokenType type, string name, size_t line, size_t srow, size_t erow)
-        : value{value}, type{type}, name{name}, line{line}, srow{srow}, erow{erow} {}
-    Token(const Token &t) : value{t.value}, type{t.type}, name{t.name}, line{t.line}, srow{t.srow}, erow{t.erow} {}
-    Token(Token &&t) : value{t.value}, type{t.type}, name{t.name}, line{t.line}, srow{t.srow}, erow{t.erow} {}
+struct Token {
+    Token(string value, TokenType type, string name, size_t line, size_t srow,
+          size_t erow)
+        : value{value}, type{type}, name{name}, line{line}, srow{srow},
+          erow{erow} {}
+    Token(const Token &t)
+        : value{t.value}, type{t.type}, name{t.name}, line{t.line},
+          srow{t.srow}, erow{t.erow} {}
+    Token(Token &&t)
+        : value{t.value}, type{t.type}, name{t.name}, line{t.line},
+          srow{t.srow}, erow{t.erow} {}
 
-    string    value; /* the actual token */
-    TokenType type;  /* type for early processing */
+    string value;   /* the actual token */
+    TokenType type; /* type for early processing */
 
     /* for proper parsing errors */
     string name;
@@ -62,11 +67,10 @@ struct Token
 
 std::ostream &operator<<(std::ostream &o, const Token &t);
 
-struct Source
-{
-    string         name;
-    size_t         line;
-    size_t         col;
+struct Source {
+    string name;
+    size_t line;
+    size_t col;
     std::ifstream *src;
 
     Source(std::string path);
@@ -82,26 +86,24 @@ struct Source
     bool eof();
 };
 
-class lexer_error : public std::runtime_error
-{
-    public:
+class lexer_error : public std::runtime_error {
+  public:
     lexer_error(Source &c, std::string msg);
     std::string make_what(Source &c, std::string msg);
 };
 
-class Lexer
-{
-    public:
+class Lexer {
+  public:
     Lexer();
 
     /* attaching a source to the lexer */
     void add_source(string file_path);
 
-    bool   has_token();  /* tries to see if there's something next */
-    Token  get();        /* get token, update internals */
-    Token &peek();       /* get token, keep internals */
-    void   discard();    /* just discard the next one, saves you from discarding */
-    
+    bool has_token(); /* tries to see if there's something next */
+    Token get();      /* get token, update internals */
+    Token &peek();    /* get token, keep internals */
+    void discard();   /* just discard the next one, saves you from discarding */
+
     /* check if the next has a particular type or set of values */
     bool is_next(TokenType t);
     bool is_next(TokenType t, std::string value);
@@ -110,12 +112,12 @@ class Lexer
     void set_skip(std::initializer_list<TokenType> types);
     void set_keywords(std::initializer_list<std::string> keywords);
 
-    private:
+  private:
     bool has_symbol();
     void read_token(); /* reads token and appends to back of cache */
 
     std::vector<Source> srcs;
-    std::vector<Token>  cache;
+    std::vector<Token> cache;
     std::set<TokenType> skip_list;
     std::set<std::string> keywords;
 };
