@@ -71,8 +71,8 @@ void Logger::panic(const char *fmt, ...) {
 // Also note that we index 3 here because of 2 reasons:
 // 1. The format argument list starts at 1
 // 2. the logger class' this argument is implicitly added.
-__attribute__((__format__(__printf__, 3, 0)))
-void Logger::log(const LogLevel &lvl, const char *fmt, va_list args) {
+__attribute__((__format__(__printf__, 3, 0))) void
+Logger::log(const LogLevel &lvl, const char *fmt, va_list args) {
     if (_col_enabled)
         fprintf(_out, "[%s%s%s] ", lvl.color, lvl.name, COL_RST);
     else
