@@ -8,9 +8,17 @@
 #include <stdio.h>
 #include <stdarg.h>
 
+enum class LogLevel {
+    info = 3,
+    success = 2,
+    warn = 1,
+    panic = 0,
+};
+
 /* internal use */
-struct LogLevel {
-    LogLevel(const char *name, const char *color) : name{name}, color{color} {}
+struct LogLevelImpl {
+    LogLevelImpl(const char *name, const char *color)
+        : name{name}, color{color} {}
     const char *name;
     const char *color;
 };
@@ -51,16 +59,14 @@ class Logger {
     void success(const char *fmt, ...);
     void panic(const char *fmt, ...);
 
-    void toggle_info(bool enabled);
-    void toggle_warn(bool enabled);
-    void toggle_success(bool enabled);
+    void set_log_level(LogLevel level);
 
   private:
-    void log(const LogLevel &lvl, const char *fmt, va_list args);
+    void log(const LogLevelImpl &lvl, const char *fmt, va_list args);
 
     FILE *_out;
     bool _col_enabled;
-    bool info_enabled, warn_enabled, success_enabled;
+    LogLevel _log_level;
 };
 
 /* Global logger instance */

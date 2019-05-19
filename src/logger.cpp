@@ -11,10 +11,10 @@
 #define COL_RST "\033[0m"
 
 /* Log levels */
-const LogLevel log_info("INFO", COL_BLUE);
-const LogLevel log_succ("SUCC", COL_GREEN);
-const LogLevel log_warn("WARN", COL_YELLOW);
-const LogLevel log_err("ERR", COL_RED);
+const LogLevelImpl log_info("INFO", COL_BLUE);
+const LogLevelImpl log_succ("SUCC", COL_GREEN);
+const LogLevelImpl log_warn("WARN", COL_YELLOW);
+const LogLevelImpl log_err("ERR", COL_RED);
 
 /* define the global logger instance */
 Logger log;
@@ -22,6 +22,7 @@ Logger log;
 Logger::Logger(FILE *out, bool force_col) {
     _out = out == nullptr ? stderr : out;
     _col_enabled = (_out == stdout || _out == stderr || force_col);
+    _log_level = LogLevel::warn;
 }
 
 Logger::~Logger() {
@@ -29,14 +30,10 @@ Logger::~Logger() {
         fclose(_out);
 }
 
-void Logger::toggle_info(bool enabled) { info_enabled = enabled; }
-
-void Logger::toggle_warn(bool enabled) { warn_enabled = enabled; }
-
-void Logger::toggle_success(bool enabled) { success_enabled = enabled; }
+void Logger::set_log_level(LogLevel level) { _log_level = level; }
 
 void Logger::info(const char *fmt, ...) {
-    if (!info_enabled)
+    if (_log_level < LogLevel::info)
         return;
 
     va_list args;
@@ -47,7 +44,7 @@ void Logger::info(const char *fmt, ...) {
 }
 
 void Logger::success(const char *fmt, ...) {
-    if (!success_enabled)
+    if (_log_level < LogLevel::success)
         return;
 
     va_list args;
@@ -58,7 +55,7 @@ void Logger::success(const char *fmt, ...) {
 }
 
 void Logger::warn(const char *fmt, ...) {
-    if (!warn_enabled)
+    if (_log_level < LogLevel::warn)
         return;
 
     va_list args;
@@ -87,7 +84,7 @@ void Logger::panic(const char *fmt, ...) {
 // 1. The format argument list starts at 1
 // 2. the logger class' this argument is implicitly added.
 __attribute__((__format__(__printf__, 3, 0))) void
-Logger::log(const LogLevel &lvl, const char *fmt, va_list args) {
+Logger::log(const LogLevelImpl &lvl, const char *fmt, va_list args) {
     if (_col_enabled)
         fprintf(_out, "[%s%s%s] ", lvl.color, lvl.name, COL_RST);
     else

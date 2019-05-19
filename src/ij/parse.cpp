@@ -502,8 +502,7 @@ Expr *parse_basic_expr(Lexer &l) /* e.g. a, 2, (1 + 3), f(1) */
     } else
         throw parse_error{n, "unknown expression"};
 
-    if (minus)
-    {
+    if (minus) {
         log.info("Unary minus detected, negating value");
 
         if (ValueExpr *v = dynamic_cast<ValueExpr *>(res))
