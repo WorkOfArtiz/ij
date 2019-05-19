@@ -1,7 +1,6 @@
-#include <iostream>
-
 #include "util.hpp"
 #include "buffer.hpp"
+#include "logger.hpp"
 #include <cstdlib>
 #include <cstring>
 #include <new> // for runtime_error, bad_alloc
@@ -67,13 +66,21 @@ template <> void buffer::write<i8>(i8 c, u32 offset, Endian e) {
 }
 
 template <> void buffer::write<u16>(u16 v, u32 offset, Endian e) {
+    union {
+        u16 value;
+        u8 bytes[sizeof(u16)];
+    } value_bytes;
+
     if (e != sys_endianess)
-        v = swap_endianess(v);
+        value_bytes.value = swap_endianess(v);
+    else
+        value_bytes.value = v;
 
     if (offset + 1 > _size)
         throw std::runtime_error{"Out of bounds"};
 
-    *reinterpret_cast<u16 *>(&_internal[offset]) = v;
+    _internal[offset + 0] = value_bytes.bytes[0];
+    _internal[offset + 1] = value_bytes.bytes[1];
 }
 
 template <> void buffer::write<i16>(i16 v, u32 offset, Endian e) {
@@ -81,13 +88,23 @@ template <> void buffer::write<i16>(i16 v, u32 offset, Endian e) {
 }
 
 template <> void buffer::write<u32>(u32 v, u32 offset, Endian e) {
+    union {
+        u32 value;
+        u8 bytes[sizeof(u32)];
+    } value_bytes;
+
     if (e != sys_endianess)
-        v = swap_endianess(v);
+        value_bytes.value = swap_endianess(v);
+    else
+        value_bytes.value = v;
 
     if (offset + 3 > _size)
         throw std::runtime_error{"Out of bounds"};
 
-    *reinterpret_cast<u32 *>(&_internal[offset]) = v;
+    _internal[offset + 0] = value_bytes.bytes[0];
+    _internal[offset + 1] = value_bytes.bytes[1];
+    _internal[offset + 2] = value_bytes.bytes[2];
+    _internal[offset + 3] = value_bytes.bytes[3];
 }
 
 template <> void buffer::write<i32>(i32 v, u32 offset, Endian e) {
@@ -97,8 +114,7 @@ template <> void buffer::write<i32>(i32 v, u32 offset, Endian e) {
 /*******************************************************************************
  * buffer::reader::read implementations
  ******************************************************************************/
-template <> u8 buffer::reader::read<u8>(Endian e) {
-    (void)e;
+template <> u8 buffer::reader::read<u8>(Endian) {
     if (_pos >= _b._size)
         throw std::runtime_error{"buffer overflow in reader"};
 
@@ -184,7 +200,7 @@ const u8 &buffer::operator[](unsigned index) const {
 }
 
 void buffer::raw_append(const u8 *raw, unsigned size) {
-    if (_size + size < _capacity)
+    if (_size + size > _capacity)
         grow(_size + size);
 
     for (unsigned i = 0; i < size; i++) {
@@ -251,8 +267,7 @@ void buffer::grow(unsigned new_size) {
     while (new_cap < new_size)
         new_cap *= 2;
 
-    std::cout << "Growing buffer from " << _capacity << " to " << new_cap
-              << std::endl;
+    log.info("Growing buffer from %d to %d", _capacity, new_cap);
 
     void *internal_new = realloc(_internal, new_cap);
     if (!internal_new)

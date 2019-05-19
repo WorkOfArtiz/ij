@@ -34,10 +34,7 @@ Expr *Expr::op(std::string op, Expr *left, Expr *right) {
     return new OpExpr(op, left, right);
 }
 
-bool Expr::has_side_effects(Program &p) const {
-    (void)p;
-    return false;
-}
+bool Expr::has_side_effects(Program &) const { return false; }
 
 std::ostream &operator<<(std::ostream &o, const Expr &e) {
     e.write(o);
@@ -273,4 +270,16 @@ std::ostream &operator<<(std::ostream &o, const Function &f) {
         o << "    " << *stmt << "; \n";
 
     return o << "}";
+}
+
+Program::~Program() {
+    for (auto f : funcs)
+        delete f;
+
+    funcs.clear();
+
+    for (auto c : consts)
+        delete c;
+
+    consts.clear();
 }

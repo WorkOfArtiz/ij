@@ -311,6 +311,8 @@ struct Constant {
 std::ostream &operator<<(std::ostream &o, const Constant &c);
 
 struct Program {
+    ~Program();
+
     std::vector<Function *> funcs;
     std::vector<Constant *> consts;
 

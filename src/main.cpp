@@ -1,5 +1,6 @@
 #include <iostream>
 #include <fstream>
+#include <memory>
 
 #include "logger.hpp"
 #include "backends/ijvm_assembler.hpp"
@@ -12,10 +13,8 @@
 /*
  * Set up the calling of the main function
  */
-void call_main(Assembler &a, bool verbose) {
-    if (verbose)
-        log.info("constructing entry point");
-
+void call_main(Assembler &a) {
+    log.info("constructing entry point");
     a.constant("__OBJREF__", 0xdeadc001);
 
     a.LDC_W("__OBJREF__");
@@ -28,9 +27,9 @@ void call_main(Assembler &a, bool verbose) {
 }
 
 static void parse_options(int argc, char **argv, string &input, string &output,
-                          bool &assembly, bool &verbose) {
+                          bool &assembly) {
     int positional = -1;
-    assembly = verbose = false;
+    assembly = false;
 
     for (int i = 1; i < argc; i++) {
         std::string arg = argv[i];
@@ -41,15 +40,22 @@ static void parse_options(int argc, char **argv, string &input, string &output,
                       << "   -S, --assembly - generates jas assembly, compiled "
                          "otherwise"
                       << std::endl
-                      << "   -v, --verbose  - prints verbose info" << std::endl;
+                      << "   -v, --verbose  - prints verbose info" << std::endl
+                      << "   -d, --debug    - prints debug info" << std::endl;
             exit(-1);
         } else if (arg == "-o" || arg == "--output") {
             output = argv[++i];
         } else if (arg == "-S" || arg == "--assembly") {
             assembly = true;
         } else if (arg == "-v" || arg == "--verbose") {
-            verbose = true;
-        } else if (positional == -1) {
+            log.toggle_success(true);
+            log.toggle_warn(true);
+        } else if (arg == "-d" || arg == "--debug") {
+            log.toggle_info(true);
+            log.toggle_success(true);
+            log.toggle_warn(true);
+        }
+        else if (positional == -1) {
             input = arg;
             positional = 0;
         } else {
@@ -71,43 +77,38 @@ static void parse_options(int argc, char **argv, string &input, string &output,
 }
 
 int main(int argc, char **argv) {
-    bool assembly, verbose;
+    bool assembly;
     string input = "";
     string output = "";
 
-    parse_options(argc, argv, input, output, assembly, verbose);
+    parse_options(argc, argv, input, output, assembly);
 
-    Assembler *a;
+    std::unique_ptr<Assembler> a;
+
     if (assembly)
-        a = new JASAssembler{};
+        a = std::make_unique<JASAssembler>();
     else
-        a = new IJVMAssembler{};
+        a = std::make_unique<IJVMAssembler>();
 
     Lexer l;
 
     try {
-        if (verbose)
-            log.info("reading file %s", input.c_str());
+        log.info("reading file %s", input.c_str());
 
-        call_main(*a, verbose);
+        call_main(*a);
         l.add_source(input);
 
-        Program *p = parse_program(l);
+        std::unique_ptr<Program> p{parse_program(l)};
 
-        if (verbose)
-            log.info("constants %lu", p->consts.size());
-
+        log.info("constants %lu", p->consts.size());
         for (auto c : p->consts) {
-            if (verbose)
-                log.info("    - %s", str(*c).c_str());
+            log.info("    - %s", cstr(*c));
             a->constant(c->name, c->value);
         }
 
-        if (verbose) {
-            log.info("functions %lu", p->funcs.size());
-            for (auto f : p->funcs)
-                log.info("function: %s", str(*f).c_str());
-        }
+        log.info("functions %lu", p->funcs.size());
+        for (auto f : p->funcs)
+            log.info("function: %s", cstr(*f));
 
         for (auto fiter : p->funcs)
             fiter->compile(*a);
@@ -115,8 +116,7 @@ int main(int argc, char **argv) {
         if (output == "")
             a->compile(std::cout);
         else {
-            if (verbose)
-                log.info("Writing to file %s", output.c_str());
+            log.info("Writing to file %s", output.c_str());
 
             std::ofstream out_file;
             out_file.open(output, std::ios::binary);
@@ -128,9 +128,10 @@ int main(int argc, char **argv) {
             out_file.close();
         }
 
+        log.success("Successfully compiled program");
+
     } catch (std::runtime_error &r) {
         log.panic("while compiling %s, %s", input.c_str(), r.what());
     }
-
     return 0;
 }
