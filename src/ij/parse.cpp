@@ -8,7 +8,7 @@
 static void expect(Lexer &l, TokenType type, bool rm = false) {
     if (!l.is_next(type))
         throw parse_error{
-            l.peek(), "Wrong token type was found, expected type" + str(type)};
+            l.peek(), "Wrong token type was found, expected type " + str(type)};
 
     if (rm)
         l.discard();
