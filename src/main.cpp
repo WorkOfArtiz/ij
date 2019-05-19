@@ -48,14 +48,10 @@ static void parse_options(int argc, char **argv, string &input, string &output,
         } else if (arg == "-S" || arg == "--assembly") {
             assembly = true;
         } else if (arg == "-v" || arg == "--verbose") {
-            log.toggle_success(true);
-            log.toggle_warn(true);
+            log.set_log_level(LogLevel::success);
         } else if (arg == "-d" || arg == "--debug") {
-            log.toggle_info(true);
-            log.toggle_success(true);
-            log.toggle_warn(true);
-        }
-        else if (positional == -1) {
+            log.set_log_level(LogLevel::info);
+        } else if (positional == -1) {
             input = arg;
             positional = 0;
         } else {
