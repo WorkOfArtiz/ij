@@ -241,106 +241,46 @@ void IfStmt::compile(Assembler &a, id_gen &gen) const {
 
 void LabelStmt::compile(Assembler &a, id_gen &) const { a.label(label_name); }
 
-void JasStmt::compile(Assembler &a, id_gen &) const {
-    switch (instr_type) {
-    case JasType::BIPUSH:
-        a.BIPUSH(iarg0);
-        break;
-    case JasType::DUP:
-        a.DUP();
-        break;
-    case JasType::ERR:
-        a.ERR();
-        break;
-    case JasType::GOTO:
-        a.GOTO(arg0);
-        break;
-    case JasType::HALT:
-        a.HALT();
-        break;
-    case JasType::IADD:
-        a.IADD();
-        break;
-    case JasType::IAND:
-        a.IAND();
-        break;
-    case JasType::IFEQ:
-        a.IFEQ(arg0);
-        break;
-    case JasType::IFLT:
-        a.IFLT(arg0);
-        break;
-    case JasType::ICMPEQ:
-        a.ICMPEQ(arg0);
-        break;
-    case JasType::IINC:
-        a.IINC(arg0, iarg0);
-        break;
-    case JasType::ILOAD:
-        a.ILOAD(arg0);
-        break;
-    case JasType::IN:
-        a.IN();
-        break;
-    case JasType::INVOKEVIRTUAL:
-        a.INVOKEVIRTUAL(arg0);
-        break;
-    case JasType::IOR:
-        a.IOR();
-        break;
-    case JasType::IRETURN:
-        a.IRETURN();
-        break;
-    case JasType::ISTORE:
-        a.ISTORE(arg0);
-        break;
-    case JasType::ISUB:
-        a.ISUB();
-        break;
-    case JasType::LDC_W:
-        a.LDC_W(arg0);
-        break;
-    case JasType::NOP:
-        a.NOP();
-        break;
-    case JasType::OUT:
-        a.OUT();
-        break;
-    case JasType::POP:
-        a.POP();
-        break;
-    case JasType::SWAP:
-        a.SWAP();
-        break;
-    case JasType::WIDE:
-        a.WIDE();
-        break;
-    case JasType::NEWARRAY:
-        a.NEWARRAY();
-        break;
-    case JasType::IALOAD:
-        a.IALOAD();
-        break;
-    case JasType::IASTORE:
-        a.IASTORE();
-        break;
-    case JasType::NETBIND:
-        a.NETBIND();
-        break;
-    case JasType::NETCONNECT:
-        a.NETCONNECT();
-        break;
-    case JasType::NETIN:
-        a.NETIN();
-        break;
-    case JasType::NETOUT:
-        a.NETOUT();
-        break;
-    case JasType::NETCLOSE:
-        a.NETCLOSE();
-        break;
+// clang-format off
+void JasStmt::compile(Assembler &a, id_gen &) const
+{
+    switch (instr_type)
+    {
+        case JasType::BIPUSH:        a.BIPUSH(iarg0);        break;
+        case JasType::DUP:           a.DUP();                break;
+        case JasType::ERR:           a.ERR();                break;
+        case JasType::GOTO:          a.GOTO(arg0);           break;
+        case JasType::HALT:          a.HALT();               break;
+        case JasType::IADD:          a.IADD();               break;
+        case JasType::IAND:          a.IAND();               break;
+        case JasType::IFEQ:          a.IFEQ(arg0);           break;
+        case JasType::IFLT:          a.IFLT(arg0);           break;
+        case JasType::ICMPEQ:        a.ICMPEQ(arg0);         break;
+        case JasType::IINC:          a.IINC(arg0, iarg0);    break;
+        case JasType::ILOAD:         a.ILOAD(arg0);          break;
+        case JasType::IN:            a.IN();                 break;
+        case JasType::INVOKEVIRTUAL: a.INVOKEVIRTUAL(arg0);  break;
+        case JasType::IOR:           a.IOR();                break;
+        case JasType::IRETURN:       a.IRETURN();            break;
+        case JasType::ISTORE:        a.ISTORE(arg0);         break;
+        case JasType::ISUB:          a.ISUB();               break;
+        case JasType::LDC_W:         a.LDC_W(arg0);          break;
+        case JasType::NOP:           a.NOP();                break;
+        case JasType::OUT:           a.OUT();                break;
+        case JasType::POP:           a.POP();                break;
+        case JasType::SWAP:          a.SWAP();               break;
+        case JasType::WIDE:          a.WIDE();               break;
+        case JasType::NEWARRAY:      a.NEWARRAY();           break;
+        case JasType::IALOAD:        a.IALOAD();             break;
+        case JasType::IASTORE:       a.IASTORE();            break;
+        case JasType::NETBIND:       a.NETBIND();            break;
+        case JasType::NETCONNECT:    a.NETCONNECT();         break;
+        case JasType::NETIN:         a.NETIN();              break;
+        case JasType::NETOUT:        a.NETOUT();             break;
+        case JasType::NETCLOSE:      a.NETCLOSE();           break;
     }
 }
+// clang-format on
 
 void BreakStmt::compile(Assembler &a, id_gen &gen) const {
     if (gen.last_for() == -1)

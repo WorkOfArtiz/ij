@@ -8,44 +8,32 @@
 /*******************************************************************************
  * TokenType
  *****************************************************************************/
-std::ostream &operator<<(std::ostream &o, const TokenType &t) {
-    switch (t) {
-    case TokenType::Decimal:
-        return o << "Decimal";
-    case TokenType::Hexadecimal:
-        return o << "Hexadecimal";
-    case TokenType::Character_literal:
-        return o << "Character_literal";
-    case TokenType::Identifier:
-        return o << "Identifier";
-    case TokenType::Keyword:
-        return o << "Keyword";
-    case TokenType::Operator:
-        return o << "Operator";
-    case TokenType::Whitespace:
-        return o << "Whitespace";
-    case TokenType::BracesOpen:
-        return o << "BracesOpen";
-    case TokenType::BracesClose:
-        return o << "BracesClose";
-    case TokenType::CurlyOpen:
-        return o << "CurlyOpen";
-    case TokenType::CurlyClose:
-        return o << "CurlyClose";
-    case TokenType::Comma:
-        return o << "Comma";
-    case TokenType::SemiColon:
-        return o << "SemiColon";
-    case TokenType::Colon:
-        return o << "Colon";
-    case TokenType::Nl:
-        return o << "Nl";
-    case TokenType::Comment:
-        return o << "Comment";
+// clang-format off
+std::ostream &operator<<(std::ostream &o, const TokenType &t)
+{
+    switch (t)
+    {
+        case TokenType::Decimal:           return o << "Decimal";
+        case TokenType::Hexadecimal:       return o << "Hexadecimal";
+        case TokenType::Character_literal: return o << "Character_literal";
+        case TokenType::Identifier:        return o << "Identifier";
+        case TokenType::Keyword:           return o << "Keyword";
+        case TokenType::Operator:          return o << "Operator";
+        case TokenType::Whitespace:        return o << "Whitespace";
+        case TokenType::BracesOpen:        return o << "BracesOpen";
+        case TokenType::BracesClose:       return o << "BracesClose";
+        case TokenType::CurlyOpen:         return o << "CurlyOpen";
+        case TokenType::CurlyClose:        return o << "CurlyClose";
+        case TokenType::Comma:             return o << "Comma";
+        case TokenType::SemiColon:         return o << "SemiColon";
+        case TokenType::Colon:             return o << "Colon";
+        case TokenType::Nl:                return o << "Nl";
+        case TokenType::Comment:           return o << "Comment";
     }
 
     throw std::runtime_error{"Unsupported tokentype"};
 }
+// clang-format on
 
 /*******************************************************************************
  * Token
@@ -241,32 +229,21 @@ void Lexer::read_token() {
     }
 
     TokenType t;
-    switch (c) {
-    case ':':
-        t = TokenType::Colon;
-        break;
-    case ';':
-        t = TokenType::SemiColon;
-        break;
-    case ',':
-        t = TokenType::Comma;
-        break;
-    case '{':
-        t = TokenType::CurlyOpen;
-        break;
-    case '}':
-        t = TokenType::CurlyClose;
-        break;
-    case '(':
-        t = TokenType::BracesOpen;
-        break;
-    case ')':
-        t = TokenType::BracesClose;
-        break;
+
+    // clang-format off
+    switch(c)
+    {
+    case ':': t = TokenType::Colon; break;
+    case ';': t = TokenType::SemiColon; break;
+    case ',': t = TokenType::Comma; break;
+    case '{': t = TokenType::CurlyOpen; break;
+    case '}': t = TokenType::CurlyClose; break;
+    case '(': t = TokenType::BracesOpen; break;
+    case ')': t = TokenType::BracesClose; break;
     default:
-        // std::cout << "ERROR SYMBOL: " << builder.str() << std::endl;
-        throw lexer_error{src, "can't identify symbol '" + builder.str() + "'"};
+        throw lexer_error{src, "can't identify symbol '" +  builder.str() + "'"};
     }
+    // clang-format on
 
     cache.emplace_back(builder.str(), t, sn, ln, cb, src.col);
 }

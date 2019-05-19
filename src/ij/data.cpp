@@ -1,41 +1,28 @@
 #include "data.hpp"
 #include "../util.hpp"
 
-const std::unordered_map<string, JasType> jas_type_mapping = {
-    {"BIPUSH", JasType::BIPUSH},
-    {"DUP", JasType::DUP},
-    {"ERR", JasType::ERR},
-    {"GOTO", JasType::GOTO},
-    {"HALT", JasType::HALT},
-    {"IADD", JasType::IADD},
-    {"IAND", JasType::IAND},
-    {"IFEQ", JasType::IFEQ},
-    {"IFLT", JasType::IFLT},
-    {"ICMPEQ", JasType::ICMPEQ},
-    {"IINC", JasType::IINC},
-    {"ILOAD", JasType::ILOAD},
-    {"IN", JasType::IN},
-    {"INVOKEVIRTUAL", JasType::INVOKEVIRTUAL},
-    {"IOR", JasType::IOR},
-    {"IRETURN", JasType::IRETURN},
-    {"ISTORE", JasType::ISTORE},
-    {"ISUB", JasType::ISUB},
-    {"LDC_W", JasType::LDC_W},
-    {"NOP", JasType::NOP},
-    {"OUT", JasType::OUT},
-    {"POP", JasType::POP},
-    {"SWAP", JasType::SWAP},
-    {"WIDE", JasType::WIDE},
-    {"IF_ICMPEQ", JasType::ICMPEQ},
-    {"NEWARRAY", JasType::NEWARRAY},
-    {"IALOAD", JasType::IALOAD},
-    {"IASTORE", JasType::IASTORE},
-    {"NETBIND", JasType::NETBIND},
-    {"NETCONNECT", JasType::NETCONNECT},
-    {"NETIN", JasType::NETIN},
-    {"NETOUT", JasType::NETOUT},
-    {"NETCLOSE", JasType::NETCLOSE},
+// clang-format off
+const std::unordered_map<string, JasType> jas_type_mapping =
+{
+    {"BIPUSH",        JasType::BIPUSH},        {"DUP",           JasType::DUP},
+    {"ERR",           JasType::ERR},           {"GOTO",          JasType::GOTO},
+    {"HALT",          JasType::HALT},          {"IADD",          JasType::IADD},
+    {"IAND",          JasType::IAND},          {"IFEQ",          JasType::IFEQ},
+    {"IFLT",          JasType::IFLT},          {"ICMPEQ",        JasType::ICMPEQ},
+    {"IINC",          JasType::IINC},          {"ILOAD",         JasType::ILOAD},
+    {"IN",            JasType::IN},            {"INVOKEVIRTUAL", JasType::INVOKEVIRTUAL},
+    {"IOR",           JasType::IOR},           {"IRETURN",       JasType::IRETURN},
+    {"ISTORE",        JasType::ISTORE},        {"ISUB",          JasType::ISUB},
+    {"LDC_W",         JasType::LDC_W},         {"NOP",           JasType::NOP},
+    {"OUT",           JasType::OUT},           {"POP",           JasType::POP},
+    {"SWAP",          JasType::SWAP},          {"WIDE",          JasType::WIDE},
+    {"IF_ICMPEQ",     JasType::ICMPEQ},        {"NEWARRAY",      JasType::NEWARRAY},
+    {"IALOAD",        JasType::IALOAD},        {"IASTORE",       JasType::IASTORE},
+    {"NETBIND",       JasType::NETBIND},       {"NETCONNECT",    JasType::NETCONNECT},
+    {"NETIN",         JasType::NETIN},         {"NETOUT",        JasType::NETOUT},
+    {"NETCLOSE",      JasType::NETCLOSE},
 };
+// clang-format on
 
 /* Implement Expr Class */
 Expr *Expr::fun(std::string name, std::vector<Expr *> args) {
