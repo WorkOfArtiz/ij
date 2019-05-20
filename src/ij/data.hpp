@@ -47,15 +47,7 @@ struct id_gen {
     ssize_t forid, ifid;
 };
 
-enum class ExprType {
-    OpExpr,    /* (op, l_expr, r_expr) */
-    IdentExpr, /* identifier */
-    ValueExpr, /* value */
-    FuncExpr,  /* (fname, exprs) */
-};
-
 struct Expr {
-    virtual ExprType type() const = 0;
     virtual void write(std::ostream &o) const = 0;
     virtual void compile(Assembler &a) const = 0;
     virtual bool has_side_effects(Program &p) const;
@@ -74,7 +66,6 @@ struct OpExpr : Expr {
     OpExpr(std::string op, Expr *l, Expr *r) : op{op}, left{l}, right{r} {}
     virtual ~OpExpr();
 
-    virtual ExprType type() const;
     virtual void write(std::ostream &o) const;
     virtual void compile(Assembler &a) const;
 
@@ -90,7 +81,6 @@ struct IdentExpr : Expr {
     IdentExpr(std::string identifier) : identifier{identifier} {}
     virtual ~IdentExpr();
 
-    virtual ExprType type() const;
     virtual void write(std::ostream &o) const;
     virtual void compile(Assembler &a) const;
 
@@ -101,7 +91,6 @@ struct ValueExpr : Expr {
     ValueExpr(int32_t value) : value{value} {}
     virtual ~ValueExpr();
 
-    virtual ExprType type() const;
     virtual void write(std::ostream &o) const;
     virtual void compile(Assembler &a) const;
 
@@ -113,7 +102,6 @@ struct FunExpr : Expr {
         : fname{name}, args{args} {}
     virtual ~FunExpr();
 
-    virtual ExprType type() const;
     virtual void write(std::ostream &o) const;
     virtual void compile(Assembler &a) const;
 
@@ -121,24 +109,11 @@ struct FunExpr : Expr {
     std::vector<Expr *> args;
 };
 
-enum class StmtType {
-    VarStmt,      /* (identifier, expr) */
-    RetStmt,      /* expr */
-    ExprStmt,     /* expr */
-    ForStmt,      /* (stmt, expr, stmt, stmts) */
-    IfStmt,       /* (expr, stmts, stmts) */
-    LabelStmt,    /* (identifier) */
-    BreakStmt,    /* None */
-    ContinueStmt, /* None */
-    JasStmt,      /* only in jas functions, like DUP; */
-};
-
 struct Stmt {
-    virtual StmtType type() const = 0;
     virtual void write(std::ostream &o) const = 0;
     virtual void compile(Assembler &a, id_gen &gen) const = 0;
     virtual void find_vars(std::vector<std::string> &vec) const;
-    virtual ~Stmt();
+    virtual ~Stmt() = 0;
 
     static Stmt *gfor(Expr *initial, Expr *cond, Expr *update,
                       std::vector<Stmt *> body);
@@ -155,7 +130,6 @@ struct VarStmt : Stmt {
         : identifier{identifier}, expr{expr} {}
     virtual ~VarStmt();
 
-    virtual StmtType type() const;
     virtual void write(std::ostream &o) const;
     virtual void compile(Assembler &a, id_gen &gen) const;
     virtual void find_vars(std::vector<std::string> &vec) const;
@@ -168,7 +142,6 @@ struct RetStmt : Stmt {
     RetStmt(Expr *e) : expr{e} {}
     virtual ~RetStmt();
 
-    virtual StmtType type() const;
     virtual void write(std::ostream &o) const;
     virtual void compile(Assembler &a, id_gen &gen) const;
 
@@ -179,7 +152,6 @@ struct ExprStmt : Stmt {
     ExprStmt(Expr *e) : expr{e} {}
     virtual ~ExprStmt();
 
-    virtual StmtType type() const;
     virtual void write(std::ostream &o) const;
     virtual void compile(Assembler &a, id_gen &gen) const;
 
@@ -192,7 +164,6 @@ struct ForStmt : Stmt {
         : initial{initial}, condition{condition}, update{update}, body{body} {}
     virtual ~ForStmt();
 
-    virtual StmtType type() const;
     virtual void write(std::ostream &o) const;
     virtual void compile(Assembler &a, id_gen &gen) const;
     virtual void find_vars(std::vector<std::string> &vec) const;
@@ -209,7 +180,6 @@ struct IfStmt : Stmt {
         : condition{condition}, thens{thens}, elses{elses} {}
     virtual ~IfStmt();
 
-    virtual StmtType type() const;
     virtual void write(std::ostream &o) const;
     virtual void compile(Assembler &a, id_gen &gen) const;
     virtual void find_vars(std::vector<std::string> &vec) const;
@@ -236,7 +206,6 @@ enum class JasType
 extern const std::unordered_map<string, JasType> jas_type_mapping;
 
 struct JasStmt : Stmt {
-    virtual StmtType type() const;
     virtual void write(std::ostream &o) const;
     virtual void compile(Assembler &a, id_gen &gen) const;
     virtual ~JasStmt();
@@ -249,7 +218,6 @@ struct JasStmt : Stmt {
 
 struct LabelStmt : Stmt {
     LabelStmt(string name);
-    virtual StmtType type() const;
     virtual void write(std::ostream &o) const;
     virtual void compile(Assembler &a, id_gen &gen) const;
     virtual ~LabelStmt();
@@ -258,14 +226,12 @@ struct LabelStmt : Stmt {
 };
 
 struct BreakStmt : Stmt {
-    virtual StmtType type() const;
     virtual void write(std::ostream &o) const;
     virtual void compile(Assembler &a, id_gen &gen) const;
     virtual ~BreakStmt();
 };
 
 struct ContinueStmt : Stmt {
-    virtual StmtType type() const;
     virtual void write(std::ostream &o) const;
     virtual void compile(Assembler &a, id_gen &gen) const;
     virtual ~ContinueStmt();

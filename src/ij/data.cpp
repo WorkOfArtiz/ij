@@ -57,21 +57,6 @@ std::ostream &operator<<(std::ostream &o, const Stmt &e) {
     return o;
 }
 
-/* Type implementations */
-ExprType OpExpr::type() const { return ExprType::OpExpr; }
-ExprType IdentExpr::type() const { return ExprType::IdentExpr; }
-ExprType ValueExpr::type() const { return ExprType::ValueExpr; }
-ExprType FunExpr::type() const { return ExprType::FuncExpr; }
-StmtType VarStmt::type() const { return StmtType::VarStmt; }
-StmtType RetStmt::type() const { return StmtType::RetStmt; }
-StmtType ExprStmt::type() const { return StmtType::ExprStmt; }
-StmtType ForStmt::type() const { return StmtType::ExprStmt; }
-StmtType IfStmt::type() const { return StmtType::ExprStmt; }
-StmtType JasStmt::type() const { return StmtType::JasStmt; }
-StmtType BreakStmt::type() const { return StmtType::BreakStmt; }
-StmtType ContinueStmt::type() const { return StmtType::ContinueStmt; }
-StmtType LabelStmt::type() const { return StmtType::LabelStmt; }
-
 /* Constructors */
 LabelStmt::LabelStmt(string label) : label_name{label} {}
 
