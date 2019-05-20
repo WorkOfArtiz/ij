@@ -33,6 +33,22 @@ static void expect(Lexer &l, TokenType type, std::string value,
         l.discard();
 }
 
+static void expect(Lexer &l, std::initializer_list<TokenType> types,
+                   bool rm = false) {
+    bool matches = false;
+
+    for (const TokenType &t : types)
+        matches |= l.is_next(t);
+
+    if (!matches)
+        throw parse_error{l.peek(),
+                          sprint("Wrong token type, expected one of {%s}",
+                                 join(", ", types))};
+
+    if (rm)
+        l.discard();
+}
+
 parse_error::parse_error(Token &t, std::string msg)
     : std::runtime_error{make_what(t, msg)} {}
 
@@ -320,55 +336,11 @@ Stmt *parse_jas_stmt(Lexer &l) /* e.g. INVOKEVIRTUAL func */
     /* IINC and BIPUSH need some extra love as the only ones with numeric args
      */
     case JasType::IINC:
-        /* first argument is identifier */
-        expect(l, TokenType::Identifier);
-        stmt->arg0 = l.get().value;
+        stmt->arg0 = parse_identifier(l);
 
         /* fall-through */
     case JasType::BIPUSH:
-        size_t end;
-
-        if (l.is_next(TokenType::Decimal))
-            stmt->iarg0 = std::stoi(l.get().value, &end);
-        else if (l.is_next(TokenType::Hexadecimal))
-            stmt->iarg0 = std::stoi(l.get().value, &end, 16);
-        else if (l.is_next(TokenType::Character_literal)) {
-            Token t = l.get();
-            if (t.value[1] == '\\') {
-                switch (t.value[2]) {
-                case '"':
-                    stmt->iarg0 = '"';
-                    break;
-                case '\\':
-                    stmt->iarg0 = '\\';
-                    break;
-                case '/':
-                    stmt->iarg0 = '/';
-                    break;
-                case 'b':
-                    stmt->iarg0 = '\b';
-                    break;
-                case 'f':
-                    stmt->iarg0 = '\f';
-                    break;
-                case 'n':
-                    stmt->iarg0 = '\n';
-                    break;
-                case 'r':
-                    stmt->iarg0 = '\r';
-                    break;
-                case 't':
-                    stmt->iarg0 = '\t';
-                    break;
-                default:
-                    throw parse_error{
-                        t, std::string("Unrecognised escape symbol \\")
-                               .append(&t.value[2])};
-                }
-            } else
-                stmt->iarg0 = t.value[1];
-        } else
-            throw parse_error{l.peek(), op + " requires integer argument"};
+        stmt->iarg0 = parse_value(l);
         break;
 
     /* instructions with identifier argument */
@@ -532,75 +504,54 @@ Expr *parse_fcall(std::string name, Lexer &l) {
 
 /* basic parts */
 std::string parse_identifier(Lexer &l) {
-    Token &t = l.peek();
-
-    if (t.type != TokenType::Identifier)
-        throw parse_error{t, "expected identifier"};
-
+    expect(l, TokenType::Identifier);
     return l.get().value;
 }
 
-int32_t parse_value(Lexer &l) {
-    int32_t sign = 1;
-    Token &b4 = l.peek();
-    if (b4.type == TokenType::Operator && b4.value == "-") {
-        l.get();
-        sign = -1;
+i32 parse_value(Lexer &l) {
+    bool sign = false;
+    i32 res;
+
+    if (l.is_next(TokenType::Operator, "-")) {
+        sign = true;
+        l.discard();
     }
 
-    Token t = l.get();
-    int32_t value = 0;
-
-    switch (t.type) {
-    case TokenType::Decimal:
-    case TokenType::Hexadecimal:
+    expect(l, {TokenType::Decimal, TokenType::Hexadecimal,
+               TokenType::Character_literal});
+    if (l.is_next(TokenType::Decimal) or l.is_next(TokenType::Hexadecimal)) {
         try {
-            value = std::stol(t.value, nullptr, 0);
+            res = std::stol(l.peek().value, nullptr, 0);
         } catch (std::out_of_range &r) {
-            throw parse_error{t, "Couldn't parse this into int"};
+            throw parse_error{l.peek(), "Couldn't parse this into int"};
         }
 
-        break;
-    case TokenType::Character_literal:
+        l.discard();
+    } else // Character literal
+    {
+        Token &t = l.peek();
+
         if (t.value[1] == '\\') {
+            // clang-format off
             switch (t.value[2]) {
-            case '"':
-                value = '"';
-                break;
-            case '\\':
-                value = '\\';
-                break;
-            case '/':
-                value = '/';
-                break;
-            case 'b':
-                value = '\b';
-                break;
-            case 'f':
-                value = '\f';
-                break;
-            case 'n':
-                value = '\n';
-                break;
-            case 'r':
-                value = '\r';
-                break;
-            case 't':
-                value = '\t';
-                break;
+            case '"':  res = '"';   break;
+            case '\\': res = '\\';  break;
+            case '/':  res = '/';   break;
+            case 'b':  res = '\b';  break;
+            case 'f':  res = '\f';  break;
+            case 'n':  res = '\n';  break;
+            case 'r':  res = '\r';  break;
+            case 't':  res = '\t';  break;
+            // clang-format on
             default:
-                throw parse_error{t,
-                                  std::string("Unrecognised escape symbol \\")
-                                      .append(&t.value[2])};
+                throw parse_error{
+                    t, sprint("Unrecongised escape symbol \\%s", t.value[2])};
             }
         } else
-            value = t.value[1];
+            res = t.value[1];
 
-        break;
-
-    default:
-        throw parse_error{t, "Expected to find a value"};
+        l.discard();
     }
 
-    return sign * value;
+    return sign ? -res : res;
 }
