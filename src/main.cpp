@@ -11,19 +11,23 @@
 #include "ij/lexer.hpp"
 
 /*
- * Set up the calling of the main function
+ * Add default main, calling __main__, this is to avoid
+ * the shitty local vars of the entry point problem.
  */
-void call_main(Assembler &a) {
-    log.info("constructing entry point");
-    a.constant("__OBJREF__", 0xdeadc001);
+static void add_main(Program &p) {
+    JasStmt *halt = new JasStmt;
+    JasStmt *err = new JasStmt;
 
-    a.LDC_W("__OBJREF__");
-    a.INVOKEVIRTUAL("__main__");
-    a.IFLT("__error__");
-    a.label("__correct__");
-    a.HALT();
-    a.label("__error__");
-    a.ERR();
+    halt->instr_type = JasType::HALT;
+    halt->op = "HALT";
+
+    err->instr_type = JasType::ERR;
+    err->op = "ERR";
+
+    Function *f = new Function(
+        "main", {}, {new IfStmt(Expr::fun("__main__", {}), {halt}, {err})});
+
+    p.funcs.insert(p.funcs.begin(), f);
 }
 
 static void parse_options(int argc, char **argv, string &input, string &output,
@@ -91,10 +95,10 @@ int main(int argc, char **argv) {
     try {
         log.info("reading file %s", input.c_str());
 
-        call_main(*a);
         l.add_source(input);
 
         std::unique_ptr<Program> p{parse_program(l)};
+        add_main(*p);
 
         log.info("constants %lu", p->consts.size());
         for (auto c : p->consts) {

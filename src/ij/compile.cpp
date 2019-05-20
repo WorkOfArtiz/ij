@@ -10,6 +10,17 @@ bool in(std::string needle, std::initializer_list<std::string> hay) {
     return false;
 }
 
+static void compile_arit_op(char op, Assembler &a) {
+    // clang-format off
+    switch (op) {
+    case '+': a.IADD(); break;
+    case '-': a.ISUB(); break;
+    case '&': a.IAND(); break;
+    case '|': a.IOR();  break;
+    }
+    // clang-format on
+}
+
 /*
  * we need to take care of the following cases
  * != == <= < >= > comparators, which shouldn't be handled here
@@ -23,54 +34,34 @@ void OpExpr::compile(Assembler &a) const {
                                  " outside of conditionals"};
 
     if (op == "=") {
-        if (left->type() != ExprType::IdentExpr)
+        if (IdentExpr *var = dynamic_cast<IdentExpr *>(left)) {
+            if (!a.is_var(var->identifier))
+                throw std::runtime_error{
+                    "only local variables can be assigned"};
+
+            right->compile(a);
+            a.ISTORE(var->identifier);
+        } else
             throw std::runtime_error{
                 "Compile error: you can only reassign variables"};
-
-        right->compile(a);
-        a.ISTORE(reinterpret_cast<IdentExpr *>(left)->identifier);
     } else if (in(op, {"+=", "-=", "&=", "|="})) {
-        if (left->type() != ExprType::IdentExpr)
+        if (IdentExpr *var = dynamic_cast<IdentExpr *>(left)) {
+            if (!a.is_var(var->identifier))
+                throw std::runtime_error{
+                    "only local variables can be reassigned"};
+
+            a.ILOAD(var->identifier);
+            right->compile(a);
+            compile_arit_op(op[0], a);
+            a.ISTORE(var->identifier);
+        } else
             throw std::runtime_error{
                 "Compile error: you can only reassign variables"};
 
-        right->compile(a);
-        a.ILOAD(reinterpret_cast<IdentExpr *>(left)->identifier);
-
-        switch (op[0]) {
-        case '+':
-            a.IADD();
-            break;
-        case '-':
-            a.ISUB();
-            break;
-        case '&':
-            a.IAND();
-            break;
-        case '|':
-            a.IOR();
-            break;
-        }
-
-        a.ISTORE(reinterpret_cast<IdentExpr *>(left)->identifier);
     } else if (in(op, {"+", "-", "&", "|"})) {
         left->compile(a);
         right->compile(a);
-
-        switch (op[0]) {
-        case '+':
-            a.IADD();
-            break;
-        case '-':
-            a.ISUB();
-            break;
-        case '&':
-            a.IAND();
-            break;
-        case '|':
-            a.IOR();
-            break;
-        }
+        compile_arit_op(op[0], a);
     } else {
         std::runtime_error{"unsupported operator found: " + op};
     }
@@ -305,7 +296,8 @@ void Function::compile(Assembler &a) const {
     for (const Stmt *s : stmts)
         s->find_vars(vars);
 
-    a.function(name, args, vars);
+    if (name != "main")
+        a.function(name, args, vars);
 
     for (Stmt *stmt : this->stmts)
         stmt->compile(a, generator);
