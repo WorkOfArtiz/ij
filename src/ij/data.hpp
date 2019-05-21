@@ -35,39 +35,46 @@
 #include <iostream>
 #include "../backends/assembler.hpp"
 #include "../logger.hpp"
+#include "../util.hpp"
 
+/* classes defined here */
 struct Program;
+struct Function;
+struct Constant;
+struct Stmt;
+struct Expr;
+struct id_gen;
+
+/* everything overwrites the << operator */
+std::ostream &operator<<(std::ostream &o, const Expr &e);
+std::ostream &operator<<(std::ostream &o, const Stmt &e);
+std::ostream &operator<<(std::ostream &o, const Function &f);
+std::ostream &operator<<(std::ostream &o, const Constant &c);
 
 struct id_gen {
-    id_gen() : forid{0}, ifid{0} {}
-
-    ssize_t last_for() { return forid - 1; }
-    ssize_t gfor() { return forid++; }
-    ssize_t gif() { return ifid++; }
+    inline id_gen() : forid{0}, ifid{0} {}
+    inline ssize_t last_for() { return forid - 1; }
+    inline ssize_t gfor() { return forid++; }
+    inline ssize_t gif() { return ifid++; }
     ssize_t forid, ifid;
 };
 
 struct Expr {
+    /* functions all expressions have to overload */
+    virtual ~Expr() = 0;
     virtual void write(std::ostream &o) const = 0;
     virtual void compile(Assembler &a) const = 0;
-    virtual bool has_side_effects(Program &p) const;
-    virtual ~Expr() = 0;
-
-    static Expr *fun(std::string name, std::vector<Expr *> args);
-    static Expr *val(int32_t val);
-    static Expr *var(std::string var);
-    static Expr *op(std::string op, Expr *left, Expr *right);
+    virtual bool has_side_effects(Program &p) const; /* optional */
 };
-
 inline Expr::~Expr() {}
-std::ostream &operator<<(std::ostream &o, const Expr &e);
 
 struct OpExpr : Expr {
-    OpExpr(std::string op, Expr *l, Expr *r) : op{op}, left{l}, right{r} {}
+    inline OpExpr(std::string op, Expr *l, Expr *r)
+        : op{op}, left{l}, right{r} {}
     virtual ~OpExpr();
-
     virtual void write(std::ostream &o) const;
     virtual void compile(Assembler &a) const;
+    virtual bool has_side_effects(Program &p) const;
 
     bool is_comparison() const;
     bool leaves_on_stack() const; /* whether there's something on stack after */
@@ -78,9 +85,8 @@ struct OpExpr : Expr {
 };
 
 struct IdentExpr : Expr {
-    IdentExpr(std::string identifier) : identifier{identifier} {}
+    inline IdentExpr(std::string identifier) : identifier{identifier} {}
     virtual ~IdentExpr();
-
     virtual void write(std::ostream &o) const;
     virtual void compile(Assembler &a) const;
 
@@ -88,7 +94,7 @@ struct IdentExpr : Expr {
 };
 
 struct ValueExpr : Expr {
-    ValueExpr(int32_t value) : value{value} {}
+    inline ValueExpr(int32_t value) : value{value} {}
     virtual ~ValueExpr();
 
     virtual void write(std::ostream &o) const;
@@ -98,12 +104,13 @@ struct ValueExpr : Expr {
 };
 
 struct FunExpr : Expr {
-    FunExpr(std::string name, std::vector<Expr *> args)
+    inline FunExpr(std::string name, std::vector<Expr *> args)
         : fname{name}, args{args} {}
     virtual ~FunExpr();
 
     virtual void write(std::ostream &o) const;
     virtual void compile(Assembler &a) const;
+    virtual bool has_side_effects(Program &p) const;
 
     std::string fname;
     std::vector<Expr *> args;
@@ -114,19 +121,12 @@ struct Stmt {
     virtual void compile(Assembler &a, id_gen &gen) const = 0;
     virtual void find_vars(std::vector<std::string> &vec) const;
     virtual ~Stmt() = 0;
-
-    static Stmt *gfor(Expr *initial, Expr *cond, Expr *update,
-                      std::vector<Stmt *> body);
-    static Stmt *var(std::string identifier, Expr *e);
-    static Stmt *expr(Expr *e);
 };
-
 inline Stmt::~Stmt() {}
 
-std::ostream &operator<<(std::ostream &o, const Stmt &e);
 
 struct VarStmt : Stmt {
-    VarStmt(std::string identifier, Expr *expr)
+    inline VarStmt(std::string identifier, Expr *expr)
         : identifier{identifier}, expr{expr} {}
     virtual ~VarStmt();
 
@@ -139,7 +139,7 @@ struct VarStmt : Stmt {
 };
 
 struct RetStmt : Stmt {
-    RetStmt(Expr *e) : expr{e} {}
+    inline RetStmt(Expr *e) : expr{e} {}
     virtual ~RetStmt();
 
     virtual void write(std::ostream &o) const;
@@ -149,7 +149,7 @@ struct RetStmt : Stmt {
 };
 
 struct ExprStmt : Stmt {
-    ExprStmt(Expr *e) : expr{e} {}
+    inline ExprStmt(Expr *e) : expr{e} {}
     virtual ~ExprStmt();
 
     virtual void write(std::ostream &o) const;
@@ -159,8 +159,8 @@ struct ExprStmt : Stmt {
 };
 
 struct ForStmt : Stmt {
-    ForStmt(Expr *initial, Expr *condition, Expr *update,
-            std::vector<Stmt *> body)
+    inline ForStmt(Expr *initial, Expr *condition, Expr *update,
+                   std::vector<Stmt *> body)
         : initial{initial}, condition{condition}, update{update}, body{body} {}
     virtual ~ForStmt();
 
@@ -175,8 +175,8 @@ struct ForStmt : Stmt {
 };
 
 struct IfStmt : Stmt {
-    IfStmt(Expr *condition, std::vector<Stmt *> thens,
-           std::vector<Stmt *> elses)
+    inline IfStmt(Expr *condition, std::vector<Stmt *> thens,
+                  std::vector<Stmt *> elses)
         : condition{condition}, thens{thens}, elses{elses} {}
     virtual ~IfStmt();
 
@@ -206,9 +206,36 @@ enum class JasType
 extern const std::unordered_map<string, JasType> jas_type_mapping;
 
 struct JasStmt : Stmt {
+    inline JasStmt(string s) : op{s}, instr_type{jas_type_mapping.at(op)} {}
     virtual void write(std::ostream &o) const;
     virtual void compile(Assembler &a, id_gen &gen) const;
     virtual ~JasStmt();
+
+    inline bool has_var_arg() const // ILOAD, ISTORE, IINC
+    {
+        return in(instr_type, {JasType::ILOAD, JasType::ISTORE, JasType::IINC});
+    }
+
+    inline bool has_const_arg() const // LDC_W
+    {
+        return instr_type == JasType::LDC_W;
+    }
+
+    inline bool has_imm_arg() const // IINC, BIPUSH
+    {
+        return in(instr_type, {JasType::IINC, JasType::BIPUSH});
+    }
+
+    inline bool has_label_arg() const // GOTO, IFEQ, IFLT, ICMPEQ
+    {
+        return in(instr_type, {JasType::GOTO, JasType::IFEQ, JasType::IFLT,
+                               JasType::ICMPEQ});
+    }
+
+    inline bool has_fun_arg() const // INVOKEVIRTUAL
+    {
+        return instr_type == JasType::INVOKEVIRTUAL;
+    }
 
     std::string op;
     JasType instr_type;
@@ -217,7 +244,7 @@ struct JasStmt : Stmt {
 };
 
 struct LabelStmt : Stmt {
-    LabelStmt(string name);
+    inline LabelStmt(string name) : label_name{name} {}
     virtual void write(std::ostream &o) const;
     virtual void compile(Assembler &a, id_gen &gen) const;
     virtual ~LabelStmt();
@@ -238,11 +265,11 @@ struct ContinueStmt : Stmt {
 };
 
 struct Function {
-    Function(std::string ident, std::vector<std::string> args,
-             std::vector<Stmt *> stmts, bool jas = false)
+    inline Function(std::string ident, std::vector<std::string> args,
+                    std::vector<Stmt *> stmts, bool jas = false)
         : name{ident}, args{args}, stmts{stmts}, jas{jas} {}
 
-    Function(Function &&other) : name{other.name}, args{other.args} {
+    inline Function(Function &&other) : name{other.name}, args{other.args} {
         stmts = std::move(other.stmts);
         other.stmts.clear();
     }
@@ -265,16 +292,12 @@ struct Function {
     bool jas;
 };
 
-std::ostream &operator<<(std::ostream &o, const Function &f);
-
 struct Constant {
     Constant(std::string name, int32_t value) : name{name}, value{value} {}
 
     std::string name;
     int32_t value;
 };
-
-std::ostream &operator<<(std::ostream &o, const Constant &c);
 
 struct Program {
     ~Program();

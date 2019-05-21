@@ -5,6 +5,16 @@
 #include <vector>
 #include <algorithm>
 
+/* in function */
+template <class T>
+constexpr inline bool in(const T &value, std::initializer_list<T> options) {
+    for (const T &i : options)
+        if (value == i)
+            return true;
+
+    return false;
+}
+
 /* optimised contains, for containers with and without find */
 template <class C, class T>
 inline auto contains_impl(const C &c, const T &x, int)
@@ -28,6 +38,11 @@ template <class T> inline int indexOf(std::vector<T> &v, const T &value) {
         return -1;
 
     return x - begin(v);
+}
+
+template <class T> inline void push_front(std::vector<T> v, T t) {
+    v.push_back(t);
+    std::rotate(v.rbegin(), v.rbegin() + 1, v.rend());
 }
 
 template <class Container>

@@ -2,6 +2,7 @@
 #include "parse.hpp"
 #include "../logger.hpp"
 #include "../util.hpp"
+#include <climits>
 #include <initializer_list>
 #include <sstream>
 
@@ -105,7 +106,7 @@ Constant *parse_constant(Lexer &l) {
     std::string name = parse_identifier(l);
 
     expect(l, TokenType::Operator, "=", true);
-    int32_t value = parse_value(l);
+    int32_t value = parse_value(l, INT32_MIN, INT32_MAX);
     expect(l, TokenType::SemiColon, ";", true);
 
     return new Constant(name, value);
@@ -212,7 +213,7 @@ Stmt *parse_statement(Lexer &l) /* delegates to types of statements */
 
 Stmt *parse_expr_stmt(Lexer &l) /* e.g. f(1, 2, 3);   */
 {
-    return Stmt::expr(parse_expr(l));
+    return new ExprStmt(parse_expr(l));
 }
 
 Stmt *parse_var_stmt(Lexer &l) /* e.g. var x = 2;    */
@@ -220,10 +221,10 @@ Stmt *parse_var_stmt(Lexer &l) /* e.g. var x = 2;    */
     expect(l, TokenType::Keyword, "var", true);
     std::string name = parse_identifier(l);
     if (!l.is_next(TokenType::Operator, "="))
-        return Stmt::var(name, Expr::val(0));
+        return new VarStmt(name, new ValueExpr(0));
 
     expect(l, TokenType::Operator, "=");
-    return Stmt::var(name, parse_expr(l));
+    return new VarStmt(name, parse_expr(l));
 }
 
 Stmt *parse_ret_stmt(Lexer &l) /* e.g. return x + x; */
@@ -257,10 +258,10 @@ Stmt *parse_for_stmt(Lexer &l) /* e.g. for (i = 0; i < 3; i += 1) stmt */
     expect(l, TokenType::BracesClose, true);
 
     if (l.is_next(TokenType::CurlyOpen))
-        return Stmt::gfor(init, condition, update, parse_compound_stmt(l));
+        return new ForStmt(init, condition, update, parse_compound_stmt(l));
     else {
         std::vector<Stmt *> body = {parse_statement(l)};
-        return Stmt::gfor(init, condition, update, body);
+        return new ForStmt(init, condition, update, body);
     }
 }
 
@@ -319,7 +320,6 @@ Stmt *parse_label_stmt(Lexer &l) /* e.g. label <name>: */
 
 Stmt *parse_jas_stmt(Lexer &l) /* e.g. INVOKEVIRTUAL func */
 {
-    JasStmt *stmt = new JasStmt;
     expect(l, TokenType::Identifier, false);
 
     Token tok = l.get();
@@ -328,37 +328,13 @@ Stmt *parse_jas_stmt(Lexer &l) /* e.g. INVOKEVIRTUAL func */
     if (jas_type_mapping.count(op) == 0)
         throw parse_error{l.peek(), "Unknown JAS instruction: " + str(op)};
 
-    stmt->op = op;
-    stmt->instr_type = jas_type_mapping.at(op);
-    stmt->iarg0 = -1;
-
-    switch (stmt->instr_type) {
-    /* IINC and BIPUSH need some extra love as the only ones with numeric args
-     */
-    case JasType::IINC:
+    JasStmt *stmt = new JasStmt(op);
+    if (stmt->has_const_arg() || stmt->has_fun_arg() || stmt->has_label_arg() ||
+        stmt->has_var_arg())
         stmt->arg0 = parse_identifier(l);
 
-        /* fall-through */
-    case JasType::BIPUSH:
-        stmt->iarg0 = parse_value(l);
-        break;
-
-    /* instructions with identifier argument */
-    case JasType::GOTO:
-    case JasType::IFEQ:
-    case JasType::IFLT:
-    case JasType::ICMPEQ:
-    case JasType::ILOAD:
-    case JasType::INVOKEVIRTUAL:
-    case JasType::ISTORE:
-    case JasType::LDC_W:
-        /* first argument is identifier */
-        expect(l, TokenType::Identifier);
-        stmt->arg0 = l.get().value;
-        break;
-    default:
-        break;
-    }
+    if (stmt->has_imm_arg())
+        stmt->iarg0 = parse_value(l, SCHAR_MIN, SCHAR_MAX);
 
     return stmt;
 }
@@ -372,7 +348,7 @@ Expr *parse_expr(Lexer &l) /* delegates to types of statements */
         std::string op = l.peek().value;
         l.discard();
 
-        left = Expr::op(op, left, parse_compare_expr(l));
+        left = new OpExpr(op, left, parse_compare_expr(l));
     }
 
     return left;
@@ -392,7 +368,7 @@ Expr *parse_compare_expr(Lexer &l) /* e.g. a == 3 */
             break;
 
         std::string op = l.get().value; // skip operator
-        res = Expr::op(op, res, parse_logic_expr(l));
+        res = new OpExpr(op, res, parse_logic_expr(l));
     }
 
     return res;
@@ -409,7 +385,7 @@ Expr *parse_logic_expr(Lexer &l) /* e.g. a | 3, a & b */
             break;
 
         std::string op = l.get().value; // skip operator
-        res = Expr::op(op, res, parse_arit_expr(l));
+        res = new OpExpr(op, res, parse_arit_expr(l));
     }
 
     return res;
@@ -426,7 +402,7 @@ Expr *parse_arit_expr(Lexer &l) /* e.g. a + b, a - b */
             break;
 
         std::string op = l.get().value; // skip operator
-        res = Expr::op(op, res, parse_basic_expr(l));
+        res = new OpExpr(op, res, parse_basic_expr(l));
     }
 
     return res;
@@ -462,7 +438,7 @@ Expr *parse_basic_expr(Lexer &l) /* e.g. a, 2, (1 + 3), f(1) */
         res = parse_expr(l);
         expect(l, TokenType::BracesClose, true);
     } else if (numeric(n))
-        res = Expr::val(parse_value(l));
+        res = new ValueExpr(parse_value(l, INT32_MIN, INT32_MAX));
     else if (n.type == TokenType::Identifier) {
         std::string name = parse_identifier(l);
 
@@ -470,7 +446,7 @@ Expr *parse_basic_expr(Lexer &l) /* e.g. a, 2, (1 + 3), f(1) */
         if (l.peek().type == TokenType::BracesOpen)
             res = parse_fcall(name, l);
         else
-            res = Expr::var(name);
+            res = new IdentExpr(name);
     } else
         throw parse_error{n, "unknown expression"};
 
@@ -480,7 +456,7 @@ Expr *parse_basic_expr(Lexer &l) /* e.g. a, 2, (1 + 3), f(1) */
         if (ValueExpr *v = dynamic_cast<ValueExpr *>(res))
             v->value *= -1;
         else
-            return Expr::op("-", Expr::val(0), res);
+            return new OpExpr("-", new ValueExpr(0), res);
     }
     return res;
 }
@@ -499,7 +475,7 @@ Expr *parse_fcall(std::string name, Lexer &l) {
     }
 
     expect(l, TokenType::BracesClose, true);
-    return Expr::fun(name, args);
+    return new FunExpr(name, args);
 }
 
 /* basic parts */
@@ -508,7 +484,7 @@ std::string parse_identifier(Lexer &l) {
     return l.get().value;
 }
 
-i32 parse_value(Lexer &l) {
+i32 parse_value(Lexer &l, long min, long max) {
     bool sign = false;
     i32 res;
 
@@ -522,8 +498,10 @@ i32 parse_value(Lexer &l) {
     if (l.is_next(TokenType::Decimal) or l.is_next(TokenType::Hexadecimal)) {
         try {
             res = std::stol(l.peek().value, nullptr, 0);
+            if (res < min || res > max)
+                throw std::out_of_range{""};
         } catch (std::out_of_range &r) {
-            throw parse_error{l.peek(), "Couldn't parse this into int"};
+            throw parse_error{l.peek(), "number out of allowed range"};
         }
 
         l.discard();

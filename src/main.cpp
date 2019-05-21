@@ -15,17 +15,11 @@
  * the shitty local vars of the entry point problem.
  */
 static void add_main(Program &p) {
-    JasStmt *halt = new JasStmt;
-    JasStmt *err = new JasStmt;
-
-    halt->instr_type = JasType::HALT;
-    halt->op = "HALT";
-
-    err->instr_type = JasType::ERR;
-    err->op = "ERR";
+    JasStmt *halt = new JasStmt{"HALT"};
+    JasStmt *err = new JasStmt{"ERR"};
 
     Function *f = new Function(
-        "main", {}, {new IfStmt(Expr::fun("__main__", {}), {halt}, {err})});
+        "main", {}, {new IfStmt(new FunExpr("__main__", {}), {halt}, {err})});
 
     p.funcs.insert(p.funcs.begin(), f);
 }

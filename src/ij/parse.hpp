@@ -38,6 +38,6 @@ Expr *parse_fcall(std::string fname, Lexer &l);
 
 /* basic parts */
 std::string parse_identifier(Lexer &l);
-int32_t parse_value(Lexer &l);
+int32_t parse_value(Lexer &l, long min, long max);
 
 #endif
