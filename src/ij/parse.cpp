@@ -114,11 +114,8 @@ Constant *parse_constant(Lexer &l) {
 }
 
 CompStmt *parse_compound_stmt(Lexer &l) {
-    if (!l.is_next(TokenType::CurlyOpen)) {
-        Stmt *s = parse_statement(l);
-        expect(l, TokenType::SemiColon, true);
-        return new CompStmt({s});
-    }
+    if (!l.is_next(TokenType::CurlyOpen))
+        return new CompStmt({parse_statement(l)});
 
     expect(l, TokenType::CurlyOpen, true);
 
@@ -196,7 +193,6 @@ static Stmt *parse_magic_print(Lexer &l) {
     expect(l, TokenType::StringLiteral, false);
     std::string s = l.get().value;
     expect(l, TokenType::BracesClose, true);
-    expect(l, TokenType::SemiColon, true);
 
     std::vector<Stmt *> stmts;
     for (const char &symbol : s) {
@@ -219,7 +215,6 @@ static Stmt *parse_magic_putc(Lexer &l) {
     stmts.push_back(parse_expr_stmt(l, false));
     stmts.push_back(new JasStmt("OUT"));
     expect(l, TokenType::BracesClose, true);
-    expect(l, TokenType::SemiColon, true);
 
     return new CompStmt(stmts);
 }
@@ -239,20 +234,18 @@ Stmt *parse_statement(Lexer &l) /* delegates to types of statements */
     if (l.is_next(TokenType::Keyword, "continue"))
         return parse_continue_stmt(l);
 
-    if (l.is_next(TokenType::Keyword, {"$print", "$puts"}))
-        return parse_magic_print(l);
-
-    if (l.is_next(TokenType::Keyword, "$putc"))
-        return parse_magic_putc(l);
-
     Stmt *s;
 
-    if (!l.is_next(TokenType::Keyword)) {
+    if (!l.is_next(TokenType::Keyword))
         s = parse_expr_stmt(l, true);
-    } else if (l.is_next(TokenType::Keyword, "var"))
+    else if (l.is_next(TokenType::Keyword, "var"))
         s = parse_var_stmt(l);
     else if (l.is_next(TokenType::Keyword, "return"))
         s = parse_ret_stmt(l);
+    else if (l.is_next(TokenType::Keyword, {"$print", "$puts"}))
+        s = parse_magic_print(l);
+    else if (l.is_next(TokenType::Keyword, "$putc"))
+        s = parse_magic_putc(l);    
     else
         throw parse_error{l.peek(), "Expected a statement"};
 
@@ -319,9 +312,12 @@ Stmt *parse_if_stmt(Lexer &l) /* e.g. if (x) stmt */
     CompStmt *thens, *elses;
 
     thens = parse_compound_stmt(l);
-
+     
     if (l.is_next(TokenType::Keyword, "else"))
+    {
+        l.discard();
         elses = parse_compound_stmt(l);
+    }
     else
         elses = new CompStmt({});
 
