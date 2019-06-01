@@ -15,11 +15,14 @@
  * the shitty local vars of the entry point problem.
  */
 static void add_main(Program &p) {
-    JasStmt *halt = new JasStmt{"HALT"};
-    JasStmt *err = new JasStmt{"ERR"};
-
     Function *f = new Function(
-        "main", {}, {new IfStmt(new FunExpr("__main__", {}), {halt}, {err})});
+        "main", {},
+        new CompStmt({
+            new IfStmt(new FunExpr("__main__", {}),
+                new CompStmt({new JasStmt{"HALT"}}), 
+                new CompStmt({new JasStmt{"ERR"}})
+            )
+        }));
 
     p.funcs.insert(p.funcs.begin(), f);
 }

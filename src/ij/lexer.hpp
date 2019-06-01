@@ -15,7 +15,7 @@ using std::string;
  *   decimals:     \d+
  *   hexadecimals: 0x[a-fA-F\d]+
  *   character lits: "'" [ -~] "'"
- * - identifiers : [_A-Za-z]\w+
+ * - identifiers : [_A-Za-z$]\w+
  * - operators: + - & | * / < > = and their extensions += -= &= |= *= /= <= >=
  * ==
  * - comments // bla
@@ -37,6 +37,7 @@ enum class TokenType {
     SemiColon,
     Colon,
     Nl,
+    StringLiteral,
     Comment
 };
 

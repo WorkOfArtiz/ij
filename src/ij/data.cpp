@@ -19,7 +19,7 @@ std::ostream &operator<<(std::ostream &o, const Constant &c) {
 std::ostream &operator<<(std::ostream &o, const Function &f) {
     o << "Function<" << f.name << ">(" << join(", ", f.args) << ") {\n";
 
-    for (auto stmt : f.stmts)
+    for (auto stmt : f.stmts->stmts)
         o << "    " << *stmt << "; \n";
 
     return o << "}";
@@ -53,6 +53,14 @@ FunExpr::~FunExpr() {
     args.clear();
 }
 
+InExpr::~InExpr() {}
+
+CompStmt::~CompStmt() {
+    for (auto stmt : stmts)
+        delete stmt;
+
+    stmts.clear();
+}
 VarStmt::~VarStmt() { delete expr; }
 RetStmt::~RetStmt() { delete expr; }
 ExprStmt::~ExprStmt() { delete expr; }
@@ -60,18 +68,12 @@ ForStmt::~ForStmt() {
     delete initial;
     delete condition;
     delete update;
-    for (auto stmt : body)
-        delete stmt;
-    body.clear();
+    delete body;
 }
 IfStmt::~IfStmt() {
     delete condition;
-    for (auto stmt : thens)
-        delete stmt;
-    for (auto stmt : elses)
-        delete stmt;
-    thens.clear();
-    elses.clear();
+    delete thens;
+    delete elses;
 }
 JasStmt::~JasStmt() {}
 BreakStmt::~BreakStmt() {}
@@ -100,6 +102,15 @@ void FunExpr::write(std::ostream &o) const {
     }
 
     o << ")";
+}
+
+void InExpr::write(std::ostream &o) const { o << "In()"; }
+
+void CompStmt::write(std::ostream &o) const {
+    o << "{ ";
+    for (Stmt *s : stmts)
+        o << *s << "; ";
+    o << "}";
 }
 
 void VarStmt::write(std::ostream &o) const {
@@ -150,22 +161,15 @@ void ForStmt::write(std::ostream &o) const {
     else
         o << "empty";
 
-    o << ") { ";
-    for (Stmt *s : body)
-        o << *s << "; ";
-
-    o << "}";
+    o << ")";
+    o << body;
 }
 
 void IfStmt::write(std::ostream &o) const {
-    o << "IfStmt(" << *condition << ") {";
-
-    for (auto stmt : thens)
-        o << *stmt << ";";
-    o << "}\n    Else {";
-    for (auto stmt : elses)
-        o << *stmt << ";";
-    o << "}";
+    o << "IfStmt(" << *condition << ") ";
+    o << thens;
+    o << "\n    Else";
+    o << elses;
 }
 
 /* has side effects */
@@ -177,23 +181,26 @@ bool FunExpr::has_side_effects(Program &) const {
     return true;
 } // TODO add for further optimizations
 
+bool InExpr::has_side_effects(Program &) const { return true; }
+
 /* Finding var statements */
 void Stmt::find_vars(std::vector<std::string> &) const { return; }
 
 /* find_vars */
+void CompStmt::find_vars(std::vector<std::string> &vec) const {
+    for (auto s : stmts)
+        s->find_vars(vec);
+}
+
 void VarStmt::find_vars(std::vector<std::string> &vec) const {
     vec.push_back(identifier);
 }
 void ForStmt::find_vars(std::vector<std::string> &vec) const {
-    for (Stmt *s : body)
-        s->find_vars(vec);
+    body->find_vars(vec);
 }
 void IfStmt::find_vars(std::vector<std::string> &vec) const {
-    for (Stmt *s : thens)
-        s->find_vars(vec);
-
-    for (Stmt *s : elses)
-        s->find_vars(vec);
+    thens->find_vars(vec);
+    elses->find_vars(vec);
 }
 
 // clang-format off

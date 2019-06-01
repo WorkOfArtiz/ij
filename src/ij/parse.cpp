@@ -71,7 +71,8 @@ Program *parse_program(Lexer &l) {
 
     l.set_skip({TokenType::Whitespace, TokenType::Nl, TokenType::Comment});
     l.set_keywords({"constant", "function", "var", "for", "if", "else", "label",
-                    "jas", "break", "continue", "return"});
+                    "jas", "break", "continue", "return", "$getc", "$putc",
+                    "$print", "$puts"});
 
     while (l.has_token()) {
         expect(l, TokenType::Keyword, {"function", "constant"});
@@ -112,7 +113,13 @@ Constant *parse_constant(Lexer &l) {
     return new Constant(name, value);
 }
 
-static std::vector<Stmt *> parse_compound_stmt(Lexer &l) {
+CompStmt *parse_compound_stmt(Lexer &l) {
+    if (!l.is_next(TokenType::CurlyOpen)) {
+        Stmt *s = parse_statement(l);
+        expect(l, TokenType::SemiColon, true);
+        return new CompStmt({s});
+    }
+
     expect(l, TokenType::CurlyOpen, true);
 
     std::vector<Stmt *> stmts;
@@ -124,10 +131,10 @@ static std::vector<Stmt *> parse_compound_stmt(Lexer &l) {
     }
     expect(l, TokenType::CurlyClose, true);
 
-    return stmts;
+    return new CompStmt(stmts);
 }
 
-static std::vector<Stmt *> parse_jas_block(Lexer &l) {
+static CompStmt *parse_jas_block(Lexer &l) {
     expect(l, TokenType::CurlyOpen, true);
 
     std::vector<Stmt *> stmts;
@@ -144,7 +151,7 @@ static std::vector<Stmt *> parse_jas_block(Lexer &l) {
     }
 
     expect(l, TokenType::CurlyClose, true);
-    return stmts;
+    return new CompStmt(stmts);
 }
 
 static std::vector<std::string> parse_identifier_list(Lexer &l) {
@@ -181,6 +188,42 @@ Function *parse_function(Lexer &l) {
         return new Function(fname, args, parse_compound_stmt(l));
 }
 
+static Stmt *parse_magic_print(Lexer &l) {
+    bool add_newline = l.is_next(TokenType::Keyword, "$puts");
+    l.discard();
+
+    expect(l, TokenType::BracesOpen, true);
+    expect(l, TokenType::StringLiteral, false);
+    std::string s = l.get().value;
+    expect(l, TokenType::BracesClose, true);
+    expect(l, TokenType::SemiColon, true);
+
+    std::vector<Stmt *> stmts;
+    for (const char &symbol : s) {
+        stmts.push_back(JasStmt::BIPUSH(symbol));
+        stmts.push_back(new JasStmt("OUT"));
+    }
+
+    if (add_newline) {
+        stmts.push_back(JasStmt::BIPUSH('\n'));
+        stmts.push_back(new JasStmt("OUT"));
+    }
+    return new CompStmt(stmts);
+}
+
+static Stmt *parse_magic_putc(Lexer &l) {
+    std::vector<Stmt *> stmts;
+
+    l.discard();
+    expect(l, TokenType::BracesOpen, true);
+    stmts.push_back(parse_expr_stmt(l, false));
+    stmts.push_back(new JasStmt("OUT"));
+    expect(l, TokenType::BracesClose, true);
+    expect(l, TokenType::SemiColon, true);
+
+    return new CompStmt(stmts);
+}
+
 /* Functions have statements */
 Stmt *parse_statement(Lexer &l) /* delegates to types of statements */
 {
@@ -196,10 +239,16 @@ Stmt *parse_statement(Lexer &l) /* delegates to types of statements */
     if (l.is_next(TokenType::Keyword, "continue"))
         return parse_continue_stmt(l);
 
+    if (l.is_next(TokenType::Keyword, {"$print", "$puts"}))
+        return parse_magic_print(l);
+
+    if (l.is_next(TokenType::Keyword, "$putc"))
+        return parse_magic_putc(l);
+
     Stmt *s;
 
     if (!l.is_next(TokenType::Keyword)) {
-        s = parse_expr_stmt(l);
+        s = parse_expr_stmt(l, true);
     } else if (l.is_next(TokenType::Keyword, "var"))
         s = parse_var_stmt(l);
     else if (l.is_next(TokenType::Keyword, "return"))
@@ -211,9 +260,9 @@ Stmt *parse_statement(Lexer &l) /* delegates to types of statements */
     return s;
 }
 
-Stmt *parse_expr_stmt(Lexer &l) /* e.g. f(1, 2, 3);   */
+Stmt *parse_expr_stmt(Lexer &l, bool pop) /* e.g. f(1, 2, 3);   */
 {
-    return new ExprStmt(parse_expr(l));
+    return new ExprStmt(parse_expr(l), pop);
 }
 
 Stmt *parse_var_stmt(Lexer &l) /* e.g. var x = 2;    */
@@ -257,12 +306,7 @@ Stmt *parse_for_stmt(Lexer &l) /* e.g. for (i = 0; i < 3; i += 1) stmt */
 
     expect(l, TokenType::BracesClose, true);
 
-    if (l.is_next(TokenType::CurlyOpen))
-        return new ForStmt(init, condition, update, parse_compound_stmt(l));
-    else {
-        std::vector<Stmt *> body = {parse_statement(l)};
-        return new ForStmt(init, condition, update, body);
-    }
+    return new ForStmt(init, condition, update, parse_compound_stmt(l));
 }
 
 Stmt *parse_if_stmt(Lexer &l) /* e.g. if (x) stmt */
@@ -272,20 +316,14 @@ Stmt *parse_if_stmt(Lexer &l) /* e.g. if (x) stmt */
     Expr *condition = parse_expr(l);
     expect(l, TokenType::BracesClose, true);
 
-    std::vector<Stmt *> thens;
-    std::vector<Stmt *> elses;
+    CompStmt *thens, *elses;
 
-    if (l.is_next(TokenType::CurlyOpen))
-        thens = parse_compound_stmt(l);
+    thens = parse_compound_stmt(l);
+
+    if (l.is_next(TokenType::Keyword, "else"))
+        elses = parse_compound_stmt(l);
     else
-        thens.push_back(parse_statement(l));
-
-    if (l.is_next(TokenType::Keyword, "else")) {
-        if (l.is_next(TokenType::CurlyOpen))
-            elses = parse_compound_stmt(l);
-        else
-            elses.push_back(parse_statement(l));
-    }
+        elses = new CompStmt({});
 
     return new IfStmt(condition, thens, elses);
 }
@@ -431,6 +469,13 @@ Expr *parse_basic_expr(Lexer &l) /* e.g. a, 2, (1 + 3), f(1) */
         l.get();
     }
 
+    if (l.is_next(TokenType::Keyword, "$getc")) {
+        l.discard();
+        expect(l, TokenType::BracesOpen, true);
+        expect(l, TokenType::BracesClose, true);
+        return new InExpr();
+    }
+
     Token &n = l.peek();
 
     if (n.type == TokenType::BracesOpen) {
@@ -523,7 +568,7 @@ i32 parse_value(Lexer &l, long min, long max) {
             // clang-format on
             default:
                 throw parse_error{
-                    t, sprint("Unrecongised escape symbol \\%s", t.value[2])};
+                    t, sprint("Unrecognised escape symbol \\%s", t.value[2])};
             }
         } else
             res = t.value[1];

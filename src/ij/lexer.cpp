@@ -13,22 +13,23 @@ std::ostream &operator<<(std::ostream &o, const TokenType &t)
 {
     switch (t)
     {
-        case TokenType::Decimal:           return o << "Decimal";
-        case TokenType::Hexadecimal:       return o << "Hexadecimal";
-        case TokenType::Character_literal: return o << "Character_literal";
-        case TokenType::Identifier:        return o << "Identifier";
-        case TokenType::Keyword:           return o << "Keyword";
-        case TokenType::Operator:          return o << "Operator";
-        case TokenType::Whitespace:        return o << "Whitespace";
-        case TokenType::BracesOpen:        return o << "BracesOpen";
-        case TokenType::BracesClose:       return o << "BracesClose";
-        case TokenType::CurlyOpen:         return o << "CurlyOpen";
-        case TokenType::CurlyClose:        return o << "CurlyClose";
-        case TokenType::Comma:             return o << "Comma";
-        case TokenType::SemiColon:         return o << "SemiColon";
-        case TokenType::Colon:             return o << "Colon";
-        case TokenType::Nl:                return o << "Nl";
-        case TokenType::Comment:           return o << "Comment";
+    case TokenType::Decimal:           return o << "Decimal";
+    case TokenType::Hexadecimal:       return o << "Hexadecimal";
+    case TokenType::Character_literal: return o << "Character_literal";
+    case TokenType::Identifier:        return o << "Identifier";
+    case TokenType::Keyword:           return o << "Keyword";
+    case TokenType::Operator:          return o << "Operator";
+    case TokenType::Whitespace:        return o << "Whitespace";
+    case TokenType::BracesOpen:        return o << "BracesOpen";
+    case TokenType::BracesClose:       return o << "BracesClose";
+    case TokenType::CurlyOpen:         return o << "CurlyOpen";
+    case TokenType::CurlyClose:        return o << "CurlyClose";
+    case TokenType::Comma:             return o << "Comma";
+    case TokenType::SemiColon:         return o << "SemiColon";
+    case TokenType::Colon:             return o << "Colon";
+    case TokenType::Nl:                return o << "Nl";
+    case TokenType::StringLiteral:     return o << "StringLiteral";
+    case TokenType::Comment:           return o << "Comment";
     }
 
     throw std::runtime_error{"Unsupported tokentype"};
@@ -170,8 +171,9 @@ void Lexer::read_token() {
     }
 
     /* identifier */
-    if (std::isalpha(c) || c == '_') {
-        while (std::isalnum(src.peekchar()) || src.peekchar() == '_')
+    if (std::isalpha(c) || c == '_' || c == '$') {
+        while (std::isalnum(src.peekchar()) || src.peekchar() == '_' ||
+               src.peekchar() == '$')
             builder << static_cast<char>(src.getchar());
 
         std::string value = builder.str();
@@ -193,6 +195,39 @@ void Lexer::read_token() {
 
         cache.emplace_back(builder.str(), TokenType::Character_literal, sn, ln,
                            cb, src.col);
+        return;
+    }
+
+    // parse "\nabc" into \x0aabc
+    if (c == '"') {
+        while ((c = src.getchar()) && c != '"') {
+            if (c == '\n')
+                throw lexer_error{src, "Multiline strings not allowed"};
+
+            if (c == '\\') {
+                c = src.getchar();
+
+                // clang-format off
+                switch(c) {
+                case '"':  c = '"';   break;
+                case '\\': c = '\\';  break;
+                case '/':  c = '/';   break;
+                case 'b':  c = '\b';  break;
+                case 'f':  c = '\f';  break;
+                case 'n':  c = '\n';  break;
+                case 'r':  c = '\r';  break;
+                case 't':  c = '\t';  break;
+                case '0':  c = '\0'; break;
+                default:
+                    throw lexer_error{src, "Escaped character not recognised"};
+                }
+                // clang-format on
+            }
+
+            builder << static_cast<char>(c);
+        }
+        cache.emplace_back(builder.str(), TokenType::StringLiteral, sn, ln, cb,
+                           src.col);
         return;
     }
 

@@ -91,6 +91,13 @@ void FunExpr::compile(Assembler &a) const {
     a.INVOKEVIRTUAL(fname);
 }
 
+void InExpr::compile(Assembler &a) const { a.IN(); }
+
+void CompStmt::compile(Assembler &a, id_gen &gen) const {
+    for (auto s : stmts)
+        s->compile(a, gen);
+}
+
 void ExprStmt::compile(Assembler &a, id_gen &) const {
     expr->compile(a);
 
@@ -98,7 +105,8 @@ void ExprStmt::compile(Assembler &a, id_gen &) const {
         if (!o->leaves_on_stack())
             return;
 
-    a.POP();
+    if (pop)
+        a.POP();
 }
 
 void VarStmt::compile(Assembler &a, id_gen &) const {
@@ -180,9 +188,7 @@ void ForStmt::compile(Assembler &a, id_gen &gen) const {
     }
 
     a.label(for_body);
-    for (Stmt *s : body) {
-        s->compile(a, gen);
-    }
+    body->compile(a, gen);
 
     a.label(for_update);
     if (update != nullptr)
@@ -213,17 +219,15 @@ void IfStmt::compile(Assembler &a, id_gen &gen) const {
     }
 
     a.label(if_then);
-    for (Stmt *s : thens)
-        s->compile(a, gen);
+    thens->compile(a, gen);
 
     // GOTO only needs to be added if there is
     // code to jump over
-    if (elses.size()) {
+    if (!elses->empty()) {
         a.GOTO(if_end);
 
         a.label(if_else);
-        for (Stmt *s : elses)
-            s->compile(a, gen);
+        elses->compile(a, gen);
     } else
         a.label(if_else);
 
@@ -293,12 +297,10 @@ void Function::compile(Assembler &a) const {
     id_gen generator;
 
     std::vector<std::string> vars;
-    for (const Stmt *s : stmts)
-        s->find_vars(vars);
+    stmts->find_vars(vars);
 
     if (name != "main")
         a.function(name, args, vars);
 
-    for (Stmt *stmt : this->stmts)
-        stmt->compile(a, generator);
+    stmts->compile(a, generator);
 }

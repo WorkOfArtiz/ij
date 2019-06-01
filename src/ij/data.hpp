@@ -116,6 +116,15 @@ struct FunExpr : Expr {
     std::vector<Expr *> args;
 };
 
+struct InExpr : Expr {
+    inline InExpr() {}
+    virtual ~InExpr();
+
+    virtual void write(std::ostream &o) const;
+    virtual void compile(Assembler &a) const;
+    virtual bool has_side_effects(Program &p) const;
+};
+
 struct Stmt {
     virtual void write(std::ostream &o) const = 0;
     virtual void compile(Assembler &a, id_gen &gen) const = 0;
@@ -124,6 +133,25 @@ struct Stmt {
 };
 inline Stmt::~Stmt() {}
 
+struct CompStmt : Stmt {
+    inline CompStmt(std::vector<Stmt *> stmts) : stmts{std::move(stmts)} {}
+    inline CompStmt(CompStmt &&old) {
+        for (auto x : old.stmts)
+            stmts.push_back(x);
+
+        old.stmts.clear();
+    }
+    virtual ~CompStmt();
+
+    virtual void write(std::ostream &o) const;
+    virtual void compile(Assembler &a, id_gen &gen) const;
+    virtual void find_vars(std::vector<string> &vec) const;
+
+    bool
+    is_terminal() const; /* whether it contains a return, IRETURN, HALT, ERR */
+    inline bool empty() const { return stmts.size() == 0; }
+    vector<Stmt *> stmts;
+};
 
 struct VarStmt : Stmt {
     inline VarStmt(std::string identifier, Expr *expr)
@@ -149,18 +177,18 @@ struct RetStmt : Stmt {
 };
 
 struct ExprStmt : Stmt {
-    inline ExprStmt(Expr *e) : expr{e} {}
+    inline ExprStmt(Expr *e, bool pop) : expr{e}, pop{pop} {}
     virtual ~ExprStmt();
 
     virtual void write(std::ostream &o) const;
     virtual void compile(Assembler &a, id_gen &gen) const;
 
     Expr *expr;
+    bool pop;
 };
 
 struct ForStmt : Stmt {
-    inline ForStmt(Expr *initial, Expr *condition, Expr *update,
-                   std::vector<Stmt *> body)
+    inline ForStmt(Expr *initial, Expr *condition, Expr *update, CompStmt *body)
         : initial{initial}, condition{condition}, update{update}, body{body} {}
     virtual ~ForStmt();
 
@@ -171,12 +199,11 @@ struct ForStmt : Stmt {
     Expr *initial;
     Expr *condition;
     Expr *update;
-    std::vector<Stmt *> body;
+    CompStmt *body;
 };
 
 struct IfStmt : Stmt {
-    inline IfStmt(Expr *condition, std::vector<Stmt *> thens,
-                  std::vector<Stmt *> elses)
+    inline IfStmt(Expr *condition, CompStmt *thens, CompStmt *elses)
         : condition{condition}, thens{thens}, elses{elses} {}
     virtual ~IfStmt();
 
@@ -185,8 +212,8 @@ struct IfStmt : Stmt {
     virtual void find_vars(std::vector<std::string> &vec) const;
 
     Expr *condition;
-    std::vector<Stmt *> thens;
-    std::vector<Stmt *> elses;
+    CompStmt *thens;
+    CompStmt *elses;
 };
 
 // clang-format off
@@ -237,6 +264,12 @@ struct JasStmt : Stmt {
         return instr_type == JasType::INVOKEVIRTUAL;
     }
 
+    inline static JasStmt *BIPUSH(i8 arg) {
+        JasStmt *stmt = new JasStmt("BIPUSH");
+        stmt->iarg0 = arg;
+        return stmt;
+    }
+
     std::string op;
     JasType instr_type;
     std::string arg0;
@@ -266,21 +299,16 @@ struct ContinueStmt : Stmt {
 
 struct Function {
     inline Function(std::string ident, std::vector<std::string> args,
-                    std::vector<Stmt *> stmts, bool jas = false)
+                    CompStmt *stmts, bool jas = false)
         : name{ident}, args{args}, stmts{stmts}, jas{jas} {}
 
     inline Function(Function &&other) : name{other.name}, args{other.args} {
         stmts = std::move(other.stmts);
-        other.stmts.clear();
     }
 
-    ~Function() {
+    inline ~Function() {
         log.info("Function %s is being deleted", name.c_str());
-
-        while (!stmts.empty()) {
-            delete stmts.back();
-            stmts.pop_back();
-        }
+        delete stmts;
     }
 
     std::vector<std::string> get_vars() const;
@@ -288,7 +316,7 @@ struct Function {
 
     std::string name;
     std::vector<std::string> args;
-    std::vector<Stmt *> stmts;
+    CompStmt *stmts;
     bool jas;
 };
 
