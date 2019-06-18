@@ -72,7 +72,7 @@ Program *parse_program(Lexer &l) {
     l.set_skip({TokenType::Whitespace, TokenType::Nl, TokenType::Comment});
     l.set_keywords({"constant", "function", "var", "for", "if", "else", "label",
                     "jas", "break", "continue", "return", "$getc", "$putc",
-                    "$print", "$puts", "$halt", "$err"});
+                    "$print", "$puts", "$halt", "$err", "$malloc"});
 
     while (l.has_token()) {
         expect(l, TokenType::Keyword, {"function", "constant"});
@@ -220,7 +220,8 @@ static Stmt *parse_magic_putc(Lexer &l) {
 }
 
 static Stmt *parse_stop(Lexer &l) {
-    Stmt *s = new JasStmt(l.is_next(TokenType::Keyword, "$err") ? "ERR" : "HALT");
+    Stmt *s =
+        new JasStmt(l.is_next(TokenType::Keyword, "$err") ? "ERR" : "HALT");
     l.discard();
     expect(l, TokenType::BracesOpen, true);
     expect(l, TokenType::BracesClose, true);
@@ -470,25 +471,21 @@ Expr *parse_basic_expr(Lexer &l) /* e.g. a, 2, (1 + 3), f(1) */
 
     if (l.peek().type == TokenType::Operator && l.peek().value == "-") {
         minus = true;
-        l.get();
+        l.discard();
     }
 
     if (l.is_next(TokenType::Keyword, "$getc")) {
         l.discard();
         expect(l, TokenType::BracesOpen, true);
         expect(l, TokenType::BracesClose, true);
-        return new InExpr();
-    }
-
-    Token &n = l.peek();
-
-    if (n.type == TokenType::BracesOpen) {
+        res = new InExpr();
+    } else if (l.is_next(TokenType::BracesOpen)) {
         expect(l, TokenType::BracesOpen, true);
         res = parse_expr(l);
         expect(l, TokenType::BracesClose, true);
-    } else if (numeric(n))
+    } else if (numeric(l.peek()))
         res = new ValueExpr(parse_value(l, INT32_MIN, INT32_MAX));
-    else if (n.type == TokenType::Identifier) {
+    else if (l.is_next(TokenType::Identifier)) {
         std::string name = parse_identifier(l);
 
         /* function call */
@@ -497,7 +494,13 @@ Expr *parse_basic_expr(Lexer &l) /* e.g. a, 2, (1 + 3), f(1) */
         else
             res = new IdentExpr(name);
     } else
-        throw parse_error{n, "unknown expression"};
+        throw parse_error{l.peek(), "unknown expression"};
+
+    while (l.is_next(TokenType::BlockOpen)) {
+        l.discard();
+        res = new ArrAccessExpr(res, parse_expr(l));
+        expect(l, TokenType::BlockClose, true);
+    }
 
     if (minus) {
         log.info("Unary minus detected, negating value");

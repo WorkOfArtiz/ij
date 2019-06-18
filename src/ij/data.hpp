@@ -129,6 +129,22 @@ struct InExpr : Expr {
     virtual bool has_side_effects(Program &p) const;
 };
 
+struct ArrAccessExpr : Expr {
+    inline ArrAccessExpr(Expr *array, Expr *index)
+        : array{array}, index{index} {}
+    inline ~ArrAccessExpr() {
+        delete array;
+        delete index;
+    }
+
+    virtual void write(std::ostream &o) const;
+    virtual void compile(Assembler &a) const;
+    virtual bool has_side_effects(Program &p) const;
+
+    Expr *array;
+    Expr *index;
+};
+
 struct Stmt {
     virtual void write(std::ostream &o) const = 0;
     virtual void compile(Program &p, Assembler &a, id_gen &gen) const = 0;

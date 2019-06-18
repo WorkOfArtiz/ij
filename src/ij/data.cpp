@@ -106,6 +106,10 @@ void FunExpr::write(std::ostream &o) const {
 
 void InExpr::write(std::ostream &o) const { o << "In()"; }
 
+void ArrAccessExpr::write(std::ostream &o) const {
+    o << "ArrayAccess(" << *array << "[" << *index << "])";
+}
+
 void CompStmt::write(std::ostream &o) const {
     o << "{ ";
     for (Stmt *s : stmts)
@@ -167,9 +171,9 @@ void ForStmt::write(std::ostream &o) const {
 
 void IfStmt::write(std::ostream &o) const {
     o << "IfStmt(" << *condition << ") ";
-    o << thens;
+    o << *thens;
     o << "\n    Else";
-    o << elses;
+    o << *elses;
 }
 
 /* has side effects */
@@ -182,6 +186,7 @@ bool FunExpr::has_side_effects(Program &) const {
 } // TODO add for further optimizations
 
 bool InExpr::has_side_effects(Program &) const { return true; }
+bool ArrAccessExpr::has_side_effects(Program &) const { return true; }
 
 /* val() aka find whether something gives a constant return value */
 option<i32> Expr::val() const { return option<i32>(); }

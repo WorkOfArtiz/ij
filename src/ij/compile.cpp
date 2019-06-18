@@ -41,9 +41,14 @@ void OpExpr::compile(Assembler &a) const {
 
             right->compile(a);
             a.ISTORE(var->identifier);
+        } else if (ArrAccessExpr *arr = dynamic_cast<ArrAccessExpr *>(left)) {
+            right->compile(a);
+            arr->index->compile(a);
+            arr->array->compile(a);
+            a.IASTORE();
         } else
             throw std::runtime_error{
-                "Compile error: you can only reassign variables"};
+                "Compile error: you can only reassign variables and arrays"};
     } else if (in(op, {"+=", "-=", "&=", "|="})) {
         if (IdentExpr *var = dynamic_cast<IdentExpr *>(left)) {
             if (!a.is_var(var->identifier))
@@ -51,12 +56,11 @@ void OpExpr::compile(Assembler &a) const {
                     "only local variables can be reassigned"};
 
             // if value is constant and representable as i8, use iinc
-            if (ValueExpr *val = dynamic_cast<ValueExpr *>(right))
-            {
+            if (ValueExpr *val = dynamic_cast<ValueExpr *>(right)) {
                 i32 value = op[0] == '-' ? -val->value : val->value;
 
-                if ((op[0] == '+' || op[0] == '-') && value > -128 && value < 128)
-                {
+                if ((op[0] == '+' || op[0] == '-') && value > -128 &&
+                    value < 128) {
                     a.IINC(var->identifier, value);
                     return;
                 }
@@ -66,6 +70,15 @@ void OpExpr::compile(Assembler &a) const {
             right->compile(a);
             compile_arit_op(op[0], a);
             a.ISTORE(var->identifier);
+        } else if (ArrAccessExpr *arr = dynamic_cast<ArrAccessExpr *>(left)) {
+            arr->index->compile(a);
+            arr->array->compile(a);
+            a.IALOAD();
+            right->compile(a);
+            compile_arit_op(op[0], a);
+            arr->index->compile(a);
+            arr->array->compile(a);
+            a.IASTORE();
         } else
             throw std::runtime_error{
                 "Compile error: you can only reassign variables"};
@@ -104,6 +117,12 @@ void FunExpr::compile(Assembler &a) const {
 }
 
 void InExpr::compile(Assembler &a) const { a.IN(); }
+
+void ArrAccessExpr::compile(Assembler &a) const {
+    index->compile(a);
+    array->compile(a);
+    a.IALOAD();
+}
 
 void CompStmt::compile(Program &p, Assembler &a, id_gen &gen) const {
     for (auto s : stmts)
@@ -210,14 +229,10 @@ void ForStmt::compile(Program &p, Assembler &a, id_gen &gen) const {
 }
 
 void IfStmt::compile(Program &p, Assembler &a, id_gen &gen) const {
-    log.warn("Compiling if");
     option<i32> cond_val = condition->val();
-    log.warn("Got option");
 
     if (cond_val.isset()) {
-        log.warn("Option is set");
-
-        if (condition->has_side_effects(p)){
+        if (condition->has_side_effects(p)) {
             condition->compile(a);
             a.POP();
         }
@@ -266,7 +281,9 @@ void IfStmt::compile(Program &p, Assembler &a, id_gen &gen) const {
     a.label(if_end);
 }
 
-void LabelStmt::compile(Program &, Assembler &a, id_gen &) const { a.label(label_name); }
+void LabelStmt::compile(Program &, Assembler &a, id_gen &) const {
+    a.label(label_name);
+}
 
 // clang-format off
 void JasStmt::compile(Program &, Assembler &a, id_gen &) const

@@ -31,6 +31,8 @@ enum class TokenType {
     Whitespace,
     BracesOpen,
     BracesClose,
+    BlockOpen,
+    BlockClose,
     CurlyOpen,
     CurlyClose,
     Comma,

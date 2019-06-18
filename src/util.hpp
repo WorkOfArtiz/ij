@@ -108,11 +108,11 @@ template <typename T> struct option {
             delete store;
     }
     inline bool isset() { return store != nullptr; };
-    inline operator const T &() const { 
-        if(!store)
+    inline operator const T &() const {
+        if (!store)
             log.panic("Trying to cast from empty option");
 
-        return *store; 
+        return *store;
     }
 
   private:
