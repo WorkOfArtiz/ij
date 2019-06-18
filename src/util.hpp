@@ -4,6 +4,7 @@
 #include <array>
 #include <vector>
 #include <algorithm>
+#include "logger.hpp"
 
 /* in function */
 template <class T>
@@ -95,4 +96,26 @@ static std::string sprint(const char *fmt, ArgTypes... args) {
     sprint_helper(s, fmt, args...);
     return s.str();
 }
+
+template <typename T> struct option {
+    inline option(option<T> &&other) : store{other.store} {
+        other.store = nullptr;
+    }
+    inline option() : store{nullptr} {}
+    inline option(const T &v) : store{new T{v}} {}
+    inline ~option() {
+        if (store)
+            delete store;
+    }
+    inline bool isset() { return store != nullptr; };
+    inline operator const T &() const { 
+        if(!store)
+            log.panic("Trying to cast from empty option");
+
+        return *store; 
+    }
+
+  private:
+    T *store;
+};
 #endif
