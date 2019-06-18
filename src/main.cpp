@@ -17,12 +17,9 @@
 static void add_main(Program &p) {
     Function *f = new Function(
         "main", {},
-        new CompStmt({
-            new IfStmt(new FunExpr("__main__", {}),
-                new CompStmt({new JasStmt{"HALT"}}), 
-                new CompStmt({new JasStmt{"ERR"}})
-            )
-        }));
+        new CompStmt({new IfStmt(new FunExpr("__main__", {}),
+                                 new CompStmt({new JasStmt{"HALT"}}),
+                                 new CompStmt({new JasStmt{"ERR"}}))}));
 
     p.funcs.insert(p.funcs.begin(), f);
 }
@@ -108,8 +105,10 @@ int main(int argc, char **argv) {
             log.info("function: %s", cstr(*f));
 
         for (auto fiter : p->funcs)
-            fiter->compile(*a);
-
+        {
+            log.info("Compiling function %s", fiter->name.c_str());
+            fiter->compile(*p, *a);
+        }
         if (output == "")
             a->compile(std::cout);
         else {
