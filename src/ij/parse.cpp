@@ -72,7 +72,7 @@ Program *parse_program(Lexer &l) {
     l.set_skip({TokenType::Whitespace, TokenType::Nl, TokenType::Comment});
     l.set_keywords({"constant", "function", "var", "for", "if", "else", "label",
                     "jas", "break", "continue", "return", "$getc", "$putc",
-                    "$print", "$puts"});
+                    "$print", "$puts", "$halt", "$err"});
 
     while (l.has_token()) {
         expect(l, TokenType::Keyword, {"function", "constant"});
@@ -219,6 +219,14 @@ static Stmt *parse_magic_putc(Lexer &l) {
     return new CompStmt(stmts);
 }
 
+static Stmt *parse_stop(Lexer &l) {
+    Stmt *s = new JasStmt(l.is_next(TokenType::Keyword, "$err") ? "ERR" : "HALT");
+    l.discard();
+    expect(l, TokenType::BracesOpen, true);
+    expect(l, TokenType::BracesClose, true);
+    return s;
+}
+
 /* Functions have statements */
 Stmt *parse_statement(Lexer &l) /* delegates to types of statements */
 {
@@ -244,8 +252,10 @@ Stmt *parse_statement(Lexer &l) /* delegates to types of statements */
         s = parse_ret_stmt(l);
     else if (l.is_next(TokenType::Keyword, {"$print", "$puts"}))
         s = parse_magic_print(l);
+    else if (l.is_next(TokenType::Keyword, {"$halt", "$err"}))
+        s = parse_stop(l);
     else if (l.is_next(TokenType::Keyword, "$putc"))
-        s = parse_magic_putc(l);    
+        s = parse_magic_putc(l);
     else
         throw parse_error{l.peek(), "Expected a statement"};
 
@@ -312,13 +322,11 @@ Stmt *parse_if_stmt(Lexer &l) /* e.g. if (x) stmt */
     CompStmt *thens, *elses;
 
     thens = parse_compound_stmt(l);
-     
-    if (l.is_next(TokenType::Keyword, "else"))
-    {
+
+    if (l.is_next(TokenType::Keyword, "else")) {
         l.discard();
         elses = parse_compound_stmt(l);
-    }
-    else
+    } else
         elses = new CompStmt({});
 
     return new IfStmt(condition, thens, elses);

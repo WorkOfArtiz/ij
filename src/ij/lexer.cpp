@@ -138,6 +138,39 @@ void Lexer::read_token() {
     if (c < 1)
         throw std::runtime_error{"Couldn't read from file"};
 
+    // parse "\nabc" into \x0aabc
+    if (c == '"') {
+        while ((c = src.getchar()) && c != '"') {
+            if (c == '\n')
+                throw lexer_error{src, "Multiline strings not allowed"};
+
+            if (c == '\\') {
+                c = src.getchar();
+
+                // clang-format off
+                switch(c) {
+                case '"':  c = '"';   break;
+                case '\\': c = '\\';  break;
+                case '/':  c = '/';   break;
+                case 'b':  c = '\b';  break;
+                case 'f':  c = '\f';  break;
+                case 'n':  c = '\n';  break;
+                case 'r':  c = '\r';  break;
+                case 't':  c = '\t';  break;
+                case '0':  c = '\0'; break;
+                default:
+                    throw lexer_error{src, "Escaped character not recognised"};
+                }
+                // clang-format on
+            }
+
+            builder << static_cast<char>(c);
+        }
+        cache.emplace_back(builder.str(), TokenType::StringLiteral, sn, ln, cb,
+                           src.col);
+        return;
+    }
+
     /* push first into builder */
     builder << static_cast<char>(c);
 
@@ -195,39 +228,6 @@ void Lexer::read_token() {
 
         cache.emplace_back(builder.str(), TokenType::Character_literal, sn, ln,
                            cb, src.col);
-        return;
-    }
-
-    // parse "\nabc" into \x0aabc
-    if (c == '"') {
-        while ((c = src.getchar()) && c != '"') {
-            if (c == '\n')
-                throw lexer_error{src, "Multiline strings not allowed"};
-
-            if (c == '\\') {
-                c = src.getchar();
-
-                // clang-format off
-                switch(c) {
-                case '"':  c = '"';   break;
-                case '\\': c = '\\';  break;
-                case '/':  c = '/';   break;
-                case 'b':  c = '\b';  break;
-                case 'f':  c = '\f';  break;
-                case 'n':  c = '\n';  break;
-                case 'r':  c = '\r';  break;
-                case 't':  c = '\t';  break;
-                case '0':  c = '\0'; break;
-                default:
-                    throw lexer_error{src, "Escaped character not recognised"};
-                }
-                // clang-format on
-            }
-
-            builder << static_cast<char>(c);
-        }
-        cache.emplace_back(builder.str(), TokenType::StringLiteral, sn, ln, cb,
-                           src.col);
         return;
     }
 

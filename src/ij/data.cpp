@@ -183,6 +183,38 @@ bool FunExpr::has_side_effects(Program &) const {
 
 bool InExpr::has_side_effects(Program &) const { return true; }
 
+/* val() aka find whether something gives a constant return value */
+option<i32> Expr::val() const { return option<i32>(); }
+option<i32> ValueExpr::val() const { return option<i32>(value); }
+option<i32> OpExpr::val() const {
+    // log.panic("Val on op %s", op.c_str());
+
+    option<i32> l = left->val();
+    option<i32> r = right->val();
+
+    if (not l.isset() or not r.isset())
+        return option<i32>();
+
+    i32 left = l;
+    i32 right = r;
+
+    if (leaves_on_stack())
+        log.panic("Trying to get value from non-returning update");
+
+    // clang-format off
+    if (op == "==")         return left == right;
+    else if (op == "<=")    return left <= right;
+    else if (op == "<")     return left <  right;
+    else if (op == ">")     return left >  right;
+    else if (op == ">=")    return left >= right;
+    else if (op == "+")     return left +  right;
+    else if (op == "-")     return left -  right;
+    else if (op == "|")     return left |  right;
+    else // if (op == "&") 
+        return left &  right;
+    // clang-format on
+}
+
 /* Finding var statements */
 void Stmt::find_vars(std::vector<std::string> &) const { return; }
 

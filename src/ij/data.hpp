@@ -43,6 +43,7 @@ struct Function;
 struct Constant;
 struct Stmt;
 struct Expr;
+struct ValueExpr;
 struct id_gen;
 
 /* everything overwrites the << operator */
@@ -65,6 +66,7 @@ struct Expr {
     virtual void write(std::ostream &o) const = 0;
     virtual void compile(Assembler &a) const = 0;
     virtual bool has_side_effects(Program &p) const; /* optional */
+    virtual option<i32> val() const; /* returns the value, if const */
 };
 inline Expr::~Expr() {}
 
@@ -75,6 +77,7 @@ struct OpExpr : Expr {
     virtual void write(std::ostream &o) const;
     virtual void compile(Assembler &a) const;
     virtual bool has_side_effects(Program &p) const;
+    virtual option<i32> val() const; /* returns the value, if const */
 
     bool is_comparison() const;
     bool leaves_on_stack() const; /* whether there's something on stack after */
@@ -99,6 +102,7 @@ struct ValueExpr : Expr {
 
     virtual void write(std::ostream &o) const;
     virtual void compile(Assembler &a) const;
+    virtual option<i32> val() const; /* returns the value, if const */
 
     int32_t value;
 };
@@ -127,7 +131,7 @@ struct InExpr : Expr {
 
 struct Stmt {
     virtual void write(std::ostream &o) const = 0;
-    virtual void compile(Assembler &a, id_gen &gen) const = 0;
+    virtual void compile(Program &p, Assembler &a, id_gen &gen) const = 0;
     virtual void find_vars(std::vector<std::string> &vec) const;
     virtual ~Stmt() = 0;
 };
@@ -144,7 +148,7 @@ struct CompStmt : Stmt {
     virtual ~CompStmt();
 
     virtual void write(std::ostream &o) const;
-    virtual void compile(Assembler &a, id_gen &gen) const;
+    virtual void compile(Program &p, Assembler &a, id_gen &gen) const;
     virtual void find_vars(std::vector<string> &vec) const;
 
     bool
@@ -159,7 +163,7 @@ struct VarStmt : Stmt {
     virtual ~VarStmt();
 
     virtual void write(std::ostream &o) const;
-    virtual void compile(Assembler &a, id_gen &gen) const;
+    virtual void compile(Program &p, Assembler &a, id_gen &gen) const;
     virtual void find_vars(std::vector<std::string> &vec) const;
 
     std::string identifier;
@@ -171,7 +175,7 @@ struct RetStmt : Stmt {
     virtual ~RetStmt();
 
     virtual void write(std::ostream &o) const;
-    virtual void compile(Assembler &a, id_gen &gen) const;
+    virtual void compile(Program &p, Assembler &a, id_gen &gen) const;
 
     Expr *expr;
 };
@@ -181,7 +185,7 @@ struct ExprStmt : Stmt {
     virtual ~ExprStmt();
 
     virtual void write(std::ostream &o) const;
-    virtual void compile(Assembler &a, id_gen &gen) const;
+    virtual void compile(Program &p, Assembler &a, id_gen &gen) const;
 
     Expr *expr;
     bool pop;
@@ -193,7 +197,7 @@ struct ForStmt : Stmt {
     virtual ~ForStmt();
 
     virtual void write(std::ostream &o) const;
-    virtual void compile(Assembler &a, id_gen &gen) const;
+    virtual void compile(Program &p, Assembler &a, id_gen &gen) const;
     virtual void find_vars(std::vector<std::string> &vec) const;
 
     Expr *initial;
@@ -208,7 +212,7 @@ struct IfStmt : Stmt {
     virtual ~IfStmt();
 
     virtual void write(std::ostream &o) const;
-    virtual void compile(Assembler &a, id_gen &gen) const;
+    virtual void compile(Program &p, Assembler &a, id_gen &gen) const;
     virtual void find_vars(std::vector<std::string> &vec) const;
 
     Expr *condition;
@@ -235,7 +239,7 @@ extern const std::unordered_map<string, JasType> jas_type_mapping;
 struct JasStmt : Stmt {
     inline JasStmt(string s) : op{s}, instr_type{jas_type_mapping.at(op)} {}
     virtual void write(std::ostream &o) const;
-    virtual void compile(Assembler &a, id_gen &gen) const;
+    virtual void compile(Program &p, Assembler &a, id_gen &gen) const;
     virtual ~JasStmt();
 
     inline bool has_var_arg() const // ILOAD, ISTORE, IINC
@@ -279,7 +283,7 @@ struct JasStmt : Stmt {
 struct LabelStmt : Stmt {
     inline LabelStmt(string name) : label_name{name} {}
     virtual void write(std::ostream &o) const;
-    virtual void compile(Assembler &a, id_gen &gen) const;
+    virtual void compile(Program &p, Assembler &a, id_gen &gen) const;
     virtual ~LabelStmt();
 
     std::string label_name;
@@ -287,13 +291,13 @@ struct LabelStmt : Stmt {
 
 struct BreakStmt : Stmt {
     virtual void write(std::ostream &o) const;
-    virtual void compile(Assembler &a, id_gen &gen) const;
+    virtual void compile(Program &p, Assembler &a, id_gen &gen) const;
     virtual ~BreakStmt();
 };
 
 struct ContinueStmt : Stmt {
     virtual void write(std::ostream &o) const;
-    virtual void compile(Assembler &a, id_gen &gen) const;
+    virtual void compile(Program &p, Assembler &a, id_gen &gen) const;
     virtual ~ContinueStmt();
 };
 
@@ -312,7 +316,7 @@ struct Function {
     }
 
     std::vector<std::string> get_vars() const;
-    void compile(Assembler &a) const;
+    void compile(Program &p, Assembler &a) const;
 
     std::string name;
     std::vector<std::string> args;

@@ -50,6 +50,18 @@ void OpExpr::compile(Assembler &a) const {
                 throw std::runtime_error{
                     "only local variables can be reassigned"};
 
+            // if value is constant and representable as i8, use iinc
+            if (ValueExpr *val = dynamic_cast<ValueExpr *>(right))
+            {
+                i32 value = op[0] == '-' ? -val->value : val->value;
+
+                if ((op[0] == '+' || op[0] == '-') && value > -128 && value < 128)
+                {
+                    a.IINC(var->identifier, value);
+                    return;
+                }
+            }
+
             a.ILOAD(var->identifier);
             right->compile(a);
             compile_arit_op(op[0], a);
@@ -93,12 +105,12 @@ void FunExpr::compile(Assembler &a) const {
 
 void InExpr::compile(Assembler &a) const { a.IN(); }
 
-void CompStmt::compile(Assembler &a, id_gen &gen) const {
+void CompStmt::compile(Program &p, Assembler &a, id_gen &gen) const {
     for (auto s : stmts)
-        s->compile(a, gen);
+        s->compile(p, a, gen);
 }
 
-void ExprStmt::compile(Assembler &a, id_gen &) const {
+void ExprStmt::compile(Program &, Assembler &a, id_gen &) const {
     expr->compile(a);
 
     if (OpExpr *o = dynamic_cast<OpExpr *>(expr))
@@ -109,12 +121,12 @@ void ExprStmt::compile(Assembler &a, id_gen &) const {
         a.POP();
 }
 
-void VarStmt::compile(Assembler &a, id_gen &) const {
+void VarStmt::compile(Program &, Assembler &a, id_gen &) const {
     expr->compile(a);
     a.ISTORE(identifier);
 }
 
-void RetStmt::compile(Assembler &a, id_gen &) const {
+void RetStmt::compile(Program &, Assembler &a, id_gen &) const {
     expr->compile(a);
     a.IRETURN();
 }
@@ -161,7 +173,7 @@ static void compile_comparison(Assembler &a, OpExpr *con, std::string if_true,
     }
 }
 
-void ForStmt::compile(Assembler &a, id_gen &gen) const {
+void ForStmt::compile(Program &p, Assembler &a, id_gen &gen) const {
     size_t for_id = gen.gfor();
 
     std::string for_start = sprint("for%d_start", for_id);
@@ -188,7 +200,7 @@ void ForStmt::compile(Assembler &a, id_gen &gen) const {
     }
 
     a.label(for_body);
-    body->compile(a, gen);
+    body->compile(p, a, gen);
 
     a.label(for_update);
     if (update != nullptr)
@@ -197,7 +209,27 @@ void ForStmt::compile(Assembler &a, id_gen &gen) const {
     a.label(for_end);
 }
 
-void IfStmt::compile(Assembler &a, id_gen &gen) const {
+void IfStmt::compile(Program &p, Assembler &a, id_gen &gen) const {
+    log.warn("Compiling if");
+    option<i32> cond_val = condition->val();
+    log.warn("Got option");
+
+    if (cond_val.isset()) {
+        log.warn("Option is set");
+
+        if (condition->has_side_effects(p)){
+            condition->compile(a);
+            a.POP();
+        }
+
+        if (cond_val != 0) // only then has to be compiled
+            thens->compile(p, a, gen);
+        else
+            elses->compile(p, a, gen);
+
+        return;
+    }
+
     size_t if_id = gen.gif();
 
     std::string if_start = sprint("if%d_condition", if_id);
@@ -219,7 +251,7 @@ void IfStmt::compile(Assembler &a, id_gen &gen) const {
     }
 
     a.label(if_then);
-    thens->compile(a, gen);
+    thens->compile(p, a, gen);
 
     // GOTO only needs to be added if there is
     // code to jump over
@@ -227,17 +259,17 @@ void IfStmt::compile(Assembler &a, id_gen &gen) const {
         a.GOTO(if_end);
 
         a.label(if_else);
-        elses->compile(a, gen);
+        elses->compile(p, a, gen);
     } else
         a.label(if_else);
 
     a.label(if_end);
 }
 
-void LabelStmt::compile(Assembler &a, id_gen &) const { a.label(label_name); }
+void LabelStmt::compile(Program &, Assembler &a, id_gen &) const { a.label(label_name); }
 
 // clang-format off
-void JasStmt::compile(Assembler &a, id_gen &) const
+void JasStmt::compile(Program &, Assembler &a, id_gen &) const
 {
     switch (instr_type)
     {
@@ -277,7 +309,7 @@ void JasStmt::compile(Assembler &a, id_gen &) const
 }
 // clang-format on
 
-void BreakStmt::compile(Assembler &a, id_gen &gen) const {
+void BreakStmt::compile(Program &, Assembler &a, id_gen &gen) const {
     if (gen.last_for() == -1)
         log.panic("break outside for detected");
 
@@ -285,7 +317,7 @@ void BreakStmt::compile(Assembler &a, id_gen &gen) const {
     a.GOTO(label);
 }
 
-void ContinueStmt::compile(Assembler &a, id_gen &gen) const {
+void ContinueStmt::compile(Program &, Assembler &a, id_gen &gen) const {
     if (gen.last_for() == -1)
         log.panic("break outside for detected");
 
@@ -293,7 +325,7 @@ void ContinueStmt::compile(Assembler &a, id_gen &gen) const {
     a.GOTO(label);
 }
 
-void Function::compile(Assembler &a) const {
+void Function::compile(Program &p, Assembler &a) const {
     id_gen generator;
 
     std::vector<std::string> vars;
@@ -302,5 +334,5 @@ void Function::compile(Assembler &a) const {
     if (name != "main")
         a.function(name, args, vars);
 
-    stmts->compile(a, generator);
+    stmts->compile(p, a, generator);
 }
