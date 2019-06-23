@@ -273,12 +273,11 @@ Stmt *parse_var_stmt(Lexer &l) /* e.g. var x = 2;    */
 {
     expect(l, TokenType::Keyword, "var", true);
     std::string name = parse_identifier(l);
-    
+
     if (l.is_next(TokenType::Operator, "=")) {
         l.discard();
         return new VarStmt(name, parse_expr(l));
-    }
-    else
+    } else
         return new VarStmt(name, new ValueExpr(0));
 }
 
