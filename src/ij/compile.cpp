@@ -203,7 +203,7 @@ void ForStmt::compile(Program &p, Assembler &a, id_gen &gen) const {
 
     a.label(for_start);
     if (initial != nullptr)
-        initial->compile(a);
+        initial->compile(p, a, gen);
 
     a.label(for_condition);
     if (OpExpr *con = dynamic_cast<OpExpr *>(condition)) {

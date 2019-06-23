@@ -208,7 +208,7 @@ struct ExprStmt : Stmt {
 };
 
 struct ForStmt : Stmt {
-    inline ForStmt(Expr *initial, Expr *condition, Expr *update, CompStmt *body)
+    inline ForStmt(Stmt *initial, Expr *condition, Expr *update, CompStmt *body)
         : initial{initial}, condition{condition}, update{update}, body{body} {}
     virtual ~ForStmt();
 
@@ -216,7 +216,7 @@ struct ForStmt : Stmt {
     virtual void compile(Program &p, Assembler &a, id_gen &gen) const;
     virtual void find_vars(std::vector<std::string> &vec) const;
 
-    Expr *initial;
+    Stmt *initial;
     Expr *condition;
     Expr *update;
     CompStmt *body;

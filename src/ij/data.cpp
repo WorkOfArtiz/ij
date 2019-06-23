@@ -233,6 +233,8 @@ void VarStmt::find_vars(std::vector<std::string> &vec) const {
     vec.push_back(identifier);
 }
 void ForStmt::find_vars(std::vector<std::string> &vec) const {
+    if (initial)
+        initial->find_vars(vec);
     body->find_vars(vec);
 }
 void IfStmt::find_vars(std::vector<std::string> &vec) const {

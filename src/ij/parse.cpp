@@ -273,11 +273,13 @@ Stmt *parse_var_stmt(Lexer &l) /* e.g. var x = 2;    */
 {
     expect(l, TokenType::Keyword, "var", true);
     std::string name = parse_identifier(l);
-    if (!l.is_next(TokenType::Operator, "="))
+    
+    if (l.is_next(TokenType::Operator, "=")) {
+        l.discard();
+        return new VarStmt(name, parse_expr(l));
+    }
+    else
         return new VarStmt(name, new ValueExpr(0));
-
-    expect(l, TokenType::Operator, "=");
-    return new VarStmt(name, parse_expr(l));
 }
 
 Stmt *parse_ret_stmt(Lexer &l) /* e.g. return x + x; */
@@ -288,15 +290,17 @@ Stmt *parse_ret_stmt(Lexer &l) /* e.g. return x + x; */
 
 Stmt *parse_for_stmt(Lexer &l) /* e.g. for (i = 0; i < 3; i += 1) stmt */
 {
-    Expr *init = nullptr;
+    Stmt *init = nullptr;
     Expr *condition = nullptr;
     Expr *update = nullptr;
 
     expect(l, TokenType::Keyword, "for", true);
     expect(l, TokenType::BracesOpen, true);
 
-    if (!l.is_next(TokenType::SemiColon))
-        init = parse_expr(l);
+    if (l.is_next(TokenType::Keyword, "var"))
+        init = parse_var_stmt(l);
+    else if (!l.is_next(TokenType::SemiColon))
+        init = parse_expr_stmt(l);
 
     expect(l, TokenType::SemiColon, true);
 
