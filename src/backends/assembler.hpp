@@ -79,6 +79,8 @@ class Assembler {
     virtual void NEWARRAY() = 0;
     virtual void IALOAD() = 0;
     virtual void IASTORE() = 0;
+    virtual void GC() = 0;
+
     virtual void NETBIND() = 0;
     virtual void NETCONNECT() = 0;
     virtual void NETIN() = 0;

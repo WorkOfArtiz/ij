@@ -220,6 +220,8 @@ void IJVMAssembler::IALOAD() { code.append<u8>(op_iaload); }
 
 void IJVMAssembler::IASTORE() { code.append<u8>(op_iastore); }
 
+void IJVMAssembler::GC() { code.append<u8>(op_gc); }
+
 void IJVMAssembler::NETBIND() { code.append<u8>(op_netbind); }
 
 void IJVMAssembler::NETCONNECT() { code.append<u8>(op_netconnect); }

@@ -28,8 +28,9 @@ const u8 op_pop            = 0x57;
 const u8 op_swap           = 0x5F;
 const u8 op_wide           = 0xC4;
 const u8 op_newarray       = 0xD1;
-const u8 op_iastore        = 0xD2;
-const u8 op_iaload         = 0xD3;
+const u8 op_iaload         = 0xD2;
+const u8 op_iastore        = 0xD3;
+const u8 op_gc             = 0xD4;
 const u8 op_netbind        = 0xE1;
 const u8 op_netconnect     = 0xE2;
 const u8 op_netin          = 0xE3;
@@ -92,6 +93,8 @@ class IJVMAssembler : public Assembler {
     virtual void NEWARRAY();
     virtual void IALOAD();
     virtual void IASTORE();
+    virtual void GC();
+
     virtual void NETBIND();
     virtual void NETCONNECT();
     virtual void NETIN();

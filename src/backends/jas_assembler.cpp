@@ -90,7 +90,7 @@ void JASAssembler::OUT() { cs << "    OUT\n"; }
 void JASAssembler::NOP() { cs << "    NOP\n"; }
 void JASAssembler::GOTO(string label) { cs << "    GOTO " << label << '\n'; }
 void JASAssembler::ICMPEQ(string label) {
-    cs << "    ICMPEQ " << label << '\n';
+    cs << "    IF_ICMPEQ " << label << '\n';
 }
 void JASAssembler::IFLT(string label) { cs << "    IFLT " << label << '\n'; }
 void JASAssembler::IFEQ(string label) { cs << "    IFEQ " << label << '\n'; }
@@ -101,6 +101,7 @@ void JASAssembler::IRETURN() { cs << "    IRETURN\n"; }
 void JASAssembler::NEWARRAY() { cs << "    NEWARRAY\n"; }
 void JASAssembler::IALOAD() { cs << "    IALOAD\n"; }
 void JASAssembler::IASTORE() { cs << "    IASTORE\n"; }
+void JASAssembler::GC() { cs << "    GC\n"; }
 void JASAssembler::NETBIND() { cs << "    NETBIND\n"; }
 void JASAssembler::NETCONNECT() { cs << "    NETCONNECT\n"; }
 void JASAssembler::NETIN() { cs << "    NETIN\n"; }

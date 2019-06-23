@@ -59,6 +59,8 @@ class JASAssembler : public Assembler {
     virtual void NEWARRAY();
     virtual void IALOAD();
     virtual void IASTORE();
+    virtual void GC();
+
     virtual void NETBIND();
     virtual void NETCONNECT();
     virtual void NETIN();
