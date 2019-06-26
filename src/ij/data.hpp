@@ -64,7 +64,7 @@ struct Expr {
     /* functions all expressions have to overload */
     virtual ~Expr() = 0;
     virtual void write(std::ostream &o) const = 0;
-    virtual void compile(Assembler &a) const = 0;
+    virtual void compile(Program &p, Assembler &a, id_gen &gen) const = 0;
     virtual bool has_side_effects(Program &p) const; /* optional */
     virtual option<i32> val() const; /* returns the value, if const */
 };
@@ -75,7 +75,7 @@ struct OpExpr : Expr {
         : op{op}, left{l}, right{r} {}
     virtual ~OpExpr();
     virtual void write(std::ostream &o) const;
-    virtual void compile(Assembler &a) const;
+    virtual void compile(Program &p, Assembler &a, id_gen &gen) const;
     virtual bool has_side_effects(Program &p) const;
     virtual option<i32> val() const; /* returns the value, if const */
 
@@ -91,7 +91,7 @@ struct IdentExpr : Expr {
     inline IdentExpr(std::string identifier) : identifier{identifier} {}
     virtual ~IdentExpr();
     virtual void write(std::ostream &o) const;
-    virtual void compile(Assembler &a) const;
+    virtual void compile(Program &p, Assembler &a, id_gen &gen) const;
 
     std::string identifier;
 };
@@ -101,7 +101,7 @@ struct ValueExpr : Expr {
     virtual ~ValueExpr();
 
     virtual void write(std::ostream &o) const;
-    virtual void compile(Assembler &a) const;
+    virtual void compile(Program &p, Assembler &a, id_gen &gen) const;
     virtual option<i32> val() const; /* returns the value, if const */
 
     int32_t value;
@@ -113,20 +113,22 @@ struct FunExpr : Expr {
     virtual ~FunExpr();
 
     virtual void write(std::ostream &o) const;
-    virtual void compile(Assembler &a) const;
+    virtual void compile(Program &p, Assembler &a, id_gen &gen) const;
     virtual bool has_side_effects(Program &p) const;
 
     std::string fname;
     std::vector<Expr *> args;
 };
 
-struct InExpr : Expr {
-    inline InExpr() {}
-    virtual ~InExpr();
+struct StmtExpr : Expr {
+    inline StmtExpr(Stmt *s) : stmt{s} {}
+    virtual ~StmtExpr();
 
     virtual void write(std::ostream &o) const;
-    virtual void compile(Assembler &a) const;
+    virtual void compile(Program &p, Assembler &a, id_gen &gen) const;
     virtual bool has_side_effects(Program &p) const;
+
+    Stmt *stmt;
 };
 
 struct ArrAccessExpr : Expr {
@@ -138,7 +140,7 @@ struct ArrAccessExpr : Expr {
     }
 
     virtual void write(std::ostream &o) const;
-    virtual void compile(Assembler &a) const;
+    virtual void compile(Program &p, Assembler &a, id_gen &g) const;
     virtual bool has_side_effects(Program &p) const;
 
     Expr *array;

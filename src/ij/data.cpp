@@ -53,7 +53,7 @@ FunExpr::~FunExpr() {
     args.clear();
 }
 
-InExpr::~InExpr() {}
+StmtExpr::~StmtExpr() { delete stmt; }
 
 CompStmt::~CompStmt() {
     for (auto stmt : stmts)
@@ -104,7 +104,7 @@ void FunExpr::write(std::ostream &o) const {
     o << ")";
 }
 
-void InExpr::write(std::ostream &o) const { o << "In()"; }
+void StmtExpr::write(std::ostream &o) const { o << "StmtExpr(" << *stmt << ")"; }
 
 void ArrAccessExpr::write(std::ostream &o) const {
     o << "ArrayAccess(" << *array << "[" << *index << "])";
@@ -185,7 +185,7 @@ bool FunExpr::has_side_effects(Program &) const {
     return true;
 } // TODO add for further optimizations
 
-bool InExpr::has_side_effects(Program &) const { return true; }
+bool StmtExpr::has_side_effects(Program &) const { return true; }
 bool ArrAccessExpr::has_side_effects(Program &) const { return true; }
 
 /* val() aka find whether something gives a constant return value */

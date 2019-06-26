@@ -28,7 +28,7 @@ static void compile_arit_op(char op, Assembler &a) {
  * + - & | arithmetic
  * = assign
  */
-void OpExpr::compile(Assembler &a) const {
+void OpExpr::compile(Program &p, Assembler &a, id_gen &g) const {
     if (in(op, {"!=", "==", "<", ">", ">=", "<="}))
         throw std::runtime_error{"Compile error: no support for " + op +
                                  " outside of conditionals"};
@@ -39,12 +39,12 @@ void OpExpr::compile(Assembler &a) const {
                 throw std::runtime_error{
                     "only local variables can be assigned"};
 
-            right->compile(a);
+            right->compile(p, a, g);
             a.ISTORE(var->identifier);
         } else if (ArrAccessExpr *arr = dynamic_cast<ArrAccessExpr *>(left)) {
-            right->compile(a);
-            arr->index->compile(a);
-            arr->array->compile(a);
+            right->compile(p, a, g);
+            arr->index->compile(p, a, g);
+            arr->array->compile(p, a, g);
             a.IASTORE();
         } else
             throw std::runtime_error{
@@ -67,32 +67,32 @@ void OpExpr::compile(Assembler &a) const {
             }
 
             a.ILOAD(var->identifier);
-            right->compile(a);
+            right->compile(p, a, g);
             compile_arit_op(op[0], a);
             a.ISTORE(var->identifier);
         } else if (ArrAccessExpr *arr = dynamic_cast<ArrAccessExpr *>(left)) {
-            arr->index->compile(a);
-            arr->array->compile(a);
+            arr->index->compile(p, a, g);
+            arr->array->compile(p, a, g);
             a.IALOAD();
-            right->compile(a);
+            right->compile(p, a, g);
             compile_arit_op(op[0], a);
-            arr->index->compile(a);
-            arr->array->compile(a);
+            arr->index->compile(p, a, g);
+            arr->array->compile(p, a, g);
             a.IASTORE();
         } else
             throw std::runtime_error{
                 "Compile error: you can only reassign variables"};
 
     } else if (in(op, {"+", "-", "&", "|"})) {
-        left->compile(a);
-        right->compile(a);
+        left->compile(p, a, g);
+        right->compile(p, a, g);
         compile_arit_op(op[0], a);
     } else {
         std::runtime_error{"unsupported operator found: " + op};
     }
 }
 
-void IdentExpr::compile(Assembler &a) const {
+void IdentExpr::compile(Program &, Assembler &a, id_gen &) const {
     if (a.is_var(identifier))
         a.ILOAD(identifier);
     else if (a.is_constant(identifier))
@@ -101,26 +101,28 @@ void IdentExpr::compile(Assembler &a) const {
         throw std::runtime_error{"Couldn't find reference to " + identifier};
 }
 
-void ValueExpr::compile(Assembler &a) const {
+void ValueExpr::compile(Program &, Assembler &a, id_gen&) const {
     a.PUSH_VAL(value); // takes care of BIPUSH limitations
 }
 
-void FunExpr::compile(Assembler &a) const {
+void FunExpr::compile(Program &p, Assembler &a, id_gen &g) const {
     if (!a.is_constant("__OBJREF__"))
         a.constant("__OBJREF__", 0xd000d000);
     a.LDC_W("__OBJREF__");
 
     for (auto e : args)
-        e->compile(a);
+        e->compile(p, a, g);
 
     a.INVOKEVIRTUAL(fname);
 }
 
-void InExpr::compile(Assembler &a) const { a.IN(); }
+void StmtExpr::compile(Program &p, Assembler &a, id_gen &g) const { 
+    stmt->compile(p, a, g); 
+}
 
-void ArrAccessExpr::compile(Assembler &a) const {
-    index->compile(a);
-    array->compile(a);
+void ArrAccessExpr::compile(Program &p, Assembler &a, id_gen &g) const {
+    index->compile(p, a, g);
+    array->compile(p, a, g);
     a.IALOAD();
 }
 
@@ -129,8 +131,8 @@ void CompStmt::compile(Program &p, Assembler &a, id_gen &gen) const {
         s->compile(p, a, gen);
 }
 
-void ExprStmt::compile(Program &, Assembler &a, id_gen &) const {
-    expr->compile(a);
+void ExprStmt::compile(Program &p, Assembler &a, id_gen &g) const {
+    expr->compile(p, a, g);
 
     if (OpExpr *o = dynamic_cast<OpExpr *>(expr))
         if (!o->leaves_on_stack())
@@ -140,50 +142,50 @@ void ExprStmt::compile(Program &, Assembler &a, id_gen &) const {
         a.POP();
 }
 
-void VarStmt::compile(Program &, Assembler &a, id_gen &) const {
-    expr->compile(a);
+void VarStmt::compile(Program &p, Assembler &a, id_gen &g) const {
+    expr->compile(p, a, g);
     a.ISTORE(identifier);
 }
 
-void RetStmt::compile(Program &, Assembler &a, id_gen &) const {
-    expr->compile(a);
+void RetStmt::compile(Program &p, Assembler &a, id_gen &g) const {
+    expr->compile(p, a, g);
     a.IRETURN();
 }
 
-static void compile_comparison(Assembler &a, OpExpr *con, std::string if_true,
+static void compile_comparison(Program &p, Assembler &a, id_gen &g, OpExpr *con, std::string if_true,
                                std::string if_false) {
     if (con->op == "<") {
-        con->left->compile(a);
-        con->right->compile(a);
+        con->left->compile(p, a, g);
+        con->right->compile(p, a, g);
         a.ISUB();
         a.IFLT(if_true);
         a.GOTO(if_false);
     } else if (con->op == ">") {
-        con->right->compile(a);
-        con->left->compile(a);
+        con->right->compile(p, a, g);
+        con->left->compile(p, a, g);
         a.ISUB();
         a.IFLT(if_true);
         a.GOTO(if_false);
     } else if (con->op == ">=") {
-        con->left->compile(a);
-        con->right->compile(a);
+        con->left->compile(p, a, g);
+        con->right->compile(p, a, g);
         a.ISUB();
         a.IFLT(if_false);
         a.GOTO(if_true);
     } else if (con->op == "<=") {
-        con->right->compile(a);
-        con->left->compile(a);
+        con->right->compile(p, a, g);
+        con->left->compile(p, a, g);
         a.ISUB();
         a.IFLT(if_false);
         a.GOTO(if_true);
     } else if (con->op == "==") {
-        con->left->compile(a);
-        con->right->compile(a);
+        con->left->compile(p, a, g);
+        con->right->compile(p, a, g);
         a.ICMPEQ(if_true);
         a.GOTO(if_false);
     } else if (con->op == "!=") {
-        con->left->compile(a);
-        con->right->compile(a);
+        con->left->compile(p, a, g);
+        con->right->compile(p, a, g);
         a.ICMPEQ(if_false);
         a.GOTO(if_true);
     } else {
@@ -208,13 +210,13 @@ void ForStmt::compile(Program &p, Assembler &a, id_gen &gen) const {
     a.label(for_condition);
     if (OpExpr *con = dynamic_cast<OpExpr *>(condition)) {
         if (con->is_comparison())
-            compile_comparison(a, con, for_body, for_end);
+            compile_comparison(p, a, gen, con, for_body, for_end);
         else {
-            condition->compile(a);
+            condition->compile(p, a, gen);
             a.IFEQ(for_end);
         }
     } else if (condition != nullptr) {
-        condition->compile(a);
+        condition->compile(p, a, gen);
         a.IFEQ(for_end);
     }
 
@@ -223,7 +225,7 @@ void ForStmt::compile(Program &p, Assembler &a, id_gen &gen) const {
 
     a.label(for_update);
     if (update != nullptr)
-        update->compile(a);
+        update->compile(p, a, gen);
     a.GOTO(for_condition);
     a.label(for_end);
 }
@@ -233,7 +235,7 @@ void IfStmt::compile(Program &p, Assembler &a, id_gen &gen) const {
 
     if (cond_val.isset()) {
         if (condition->has_side_effects(p)) {
-            condition->compile(a);
+            condition->compile(p, a, gen);
             a.POP();
         }
 
@@ -255,13 +257,13 @@ void IfStmt::compile(Program &p, Assembler &a, id_gen &gen) const {
     a.label(if_start);
     if (OpExpr *con = dynamic_cast<OpExpr *>(condition)) {
         if (con->is_comparison()) {
-            compile_comparison(a, con, if_then, if_else);
+            compile_comparison(p, a, gen, con, if_then, if_else);
         } else {
-            condition->compile(a);
+            condition->compile(p, a, gen);
             a.IFEQ(if_else);
         }
     } else {
-        condition->compile(a);
+        condition->compile(p, a, gen);
         a.IFEQ(if_else);
     }
 

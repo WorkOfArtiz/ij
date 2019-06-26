@@ -70,9 +70,10 @@ Program *parse_program(Lexer &l) {
     std::set<std::string> constants{{"main"}};
 
     l.set_skip({TokenType::Whitespace, TokenType::Nl, TokenType::Comment});
-    l.set_keywords({"constant", "function", "var", "for", "if", "else", "label",
+    l.set_keywords({"constant", "function", "var", "for", "while", "if", "else", "label",
                     "jas", "break", "continue", "return", "$getc", "$putc",
-                    "$print", "$puts", "$halt", "$err", "$malloc"});
+                    "$print", "$puts", "$halt", "$err", "$malloc",
+                    "$push", "$pop"});
 
     while (l.has_token()) {
         expect(l, TokenType::Keyword, {"function", "constant"});
@@ -234,6 +235,7 @@ Stmt *parse_statement(Lexer &l) /* delegates to types of statements */
     if (l.is_next(TokenType::Keyword, "for"))
         return parse_for_stmt(l);
 
+
     if (l.is_next(TokenType::Keyword, "if"))
         return parse_if_stmt(l);
 
@@ -245,9 +247,7 @@ Stmt *parse_statement(Lexer &l) /* delegates to types of statements */
 
     Stmt *s;
 
-    if (!l.is_next(TokenType::Keyword))
-        s = parse_expr_stmt(l, true);
-    else if (l.is_next(TokenType::Keyword, "var"))
+    if (l.is_next(TokenType::Keyword, "var"))
         s = parse_var_stmt(l);
     else if (l.is_next(TokenType::Keyword, "return"))
         s = parse_ret_stmt(l);
@@ -257,8 +257,17 @@ Stmt *parse_statement(Lexer &l) /* delegates to types of statements */
         s = parse_stop(l);
     else if (l.is_next(TokenType::Keyword, "$putc"))
         s = parse_magic_putc(l);
-    else
-        throw parse_error{l.peek(), "Expected a statement"};
+    else if (l.is_next(TokenType::Keyword, "$push")) {
+        l.discard();
+        expect(l, TokenType::BracesOpen, true);
+        s = new ExprStmt(parse_expr(l), false);
+        expect(l, TokenType::BracesClose, true);
+    }
+    else 
+    // if (!l.is_next(TokenType::Keyword))
+        s = parse_expr_stmt(l, true);
+    // else
+    //     throw parse_error{l.peek(), "Expected a statement"};
 
     expect(l, TokenType::SemiColon, true);
     return s;
@@ -308,7 +317,7 @@ Stmt *parse_for_stmt(Lexer &l) /* e.g. for (i = 0; i < 3; i += 1) stmt */
 
     expect(l, TokenType::SemiColon, true);
 
-    if (!l.is_next(TokenType::SemiColon))
+    if (!l.is_next(TokenType::BracesClose))
         update = parse_expr(l);
 
     expect(l, TokenType::BracesClose, true);
@@ -481,8 +490,24 @@ Expr *parse_basic_expr(Lexer &l) /* e.g. a, 2, (1 + 3), f(1) */
         l.discard();
         expect(l, TokenType::BracesOpen, true);
         expect(l, TokenType::BracesClose, true);
-        res = new InExpr();
-    } else if (l.is_next(TokenType::BracesOpen)) {
+        res = new StmtExpr(new JasStmt("IN"));
+    } 
+    else if (l.is_next(TokenType::Keyword, "$push")) {
+        l.discard();
+        expect(l, TokenType::BracesOpen, true);
+        res = new StmtExpr(new CompStmt({
+            parse_expr_stmt(l, false),
+            new JasStmt("DUP")
+        }));
+        expect(l, TokenType::BracesClose, true);    
+    }
+    else if (l.is_next(TokenType::Keyword, "$pop")) {
+        l.discard();
+        expect(l, TokenType::BracesOpen, true);
+        expect(l, TokenType::BracesClose, true);
+        res = new StmtExpr(new CompStmt({}));
+    }
+    else if (l.is_next(TokenType::BracesOpen)) {
         expect(l, TokenType::BracesOpen, true);
         res = parse_expr(l);
         expect(l, TokenType::BracesClose, true);
