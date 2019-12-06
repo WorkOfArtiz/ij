@@ -23,6 +23,7 @@ Stmt *parse_expr_stmt(Lexer &l, bool pop = true); /* e.g. f(1, 2, 3);   */
 Stmt *parse_var_stmt(Lexer &l);                   /* e.g. var x = 2;    */
 Stmt *parse_ret_stmt(Lexer &l);                   /* e.g. return x + x; */
 Stmt *parse_for_stmt(Lexer &l);      /* e.g. for (i = 0; i < 3; i += 1) stmt */
+Stmt *parse_while_stmt(Lexer &l);    /* e.g. while (i < 3) { u; } */
 Stmt *parse_if_stmt(Lexer &l);       /* e.g. if (x) stmt */
 Stmt *parse_break_stmt(Lexer &l);    /* e.g. break; */
 Stmt *parse_continue_stmt(Lexer &l); /* e.g. continue; */

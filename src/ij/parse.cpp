@@ -235,6 +235,8 @@ Stmt *parse_statement(Lexer &l) /* delegates to types of statements */
     if (l.is_next(TokenType::Keyword, "for"))
         return parse_for_stmt(l);
 
+    if (l.is_next(TokenType::Keyword, "while"))
+        return parse_while_stmt(l);
 
     if (l.is_next(TokenType::Keyword, "if"))
         return parse_if_stmt(l);
@@ -263,7 +265,7 @@ Stmt *parse_statement(Lexer &l) /* delegates to types of statements */
         s = new ExprStmt(parse_expr(l), false);
         expect(l, TokenType::BracesClose, true);
     }
-    else 
+    else
     // if (!l.is_next(TokenType::Keyword))
         s = parse_expr_stmt(l, true);
     // else
@@ -323,6 +325,19 @@ Stmt *parse_for_stmt(Lexer &l) /* e.g. for (i = 0; i < 3; i += 1) stmt */
     expect(l, TokenType::BracesClose, true);
 
     return new ForStmt(init, condition, update, parse_compound_stmt(l));
+}
+
+Stmt *parse_while_stmt(Lexer &l)
+{
+    Expr *condition = nullptr;
+
+    expect(l, TokenType::Keyword, "while", true);
+    expect(l, TokenType::BracesOpen, true);
+    if (!l.is_next(TokenType::BracesClose)) {
+        condition = parse_expr(l);
+    }
+    expect(l, TokenType::BracesClose, true);
+    return new ForStmt(nullptr, condition, nullptr, parse_compound_stmt(l));
 }
 
 Stmt *parse_if_stmt(Lexer &l) /* e.g. if (x) stmt */
@@ -491,7 +506,7 @@ Expr *parse_basic_expr(Lexer &l) /* e.g. a, 2, (1 + 3), f(1) */
         expect(l, TokenType::BracesOpen, true);
         expect(l, TokenType::BracesClose, true);
         res = new StmtExpr(new JasStmt("IN"));
-    } 
+    }
     else if (l.is_next(TokenType::Keyword, "$push")) {
         l.discard();
         expect(l, TokenType::BracesOpen, true);
@@ -499,7 +514,7 @@ Expr *parse_basic_expr(Lexer &l) /* e.g. a, 2, (1 + 3), f(1) */
             parse_expr_stmt(l, false),
             new JasStmt("DUP")
         }));
-        expect(l, TokenType::BracesClose, true);    
+        expect(l, TokenType::BracesClose, true);
     }
     else if (l.is_next(TokenType::Keyword, "$pop")) {
         l.discard();
