@@ -15,7 +15,7 @@ void Assembler::constant(string name, i32 value) {
 
 void Assembler::PUSH_VAL(int32_t value) {
     if (value >= -128 && value <= 127) {
-        log.info("PUSH_VAL chose a bipush for value %d", value);
+        // log.info("PUSH_VAL chose a bipush for value %d", value);
         BIPUSH(value);
         return;
     }
@@ -24,8 +24,8 @@ void Assembler::PUSH_VAL(int32_t value) {
     if (!is_constant(cn))
         constant(cn, value);
 
-    log.info("PUSH_VAL chose an LDC_W for value %d (const %s)", value,
-             cn.c_str());
+    // log.info("PUSH_VAL chose an LDC_W for value %d (const %s)", value,
+    //  cn.c_str());
     LDC_W(cn);
 }
 
@@ -40,4 +40,40 @@ void Assembler::INC_VAR(string var, int32_t value) {
         PUSH_VAL(value);
         ISTORE(var);
     }
+}
+
+void Assembler::IMUL(i32 value) {
+    i32 bits = 0;
+    log.info("IMUL %d", value);
+
+    if (!value) {
+        this->POP();
+        this->BIPUSH(0);
+        return;
+    }
+
+    bool sign = false;
+    if (value < 0) {
+        value = -value;
+        sign = true;
+        this->BIPUSH(0);
+        this->SWAP();
+    }
+
+    for (i32 shift_value = value; shift_value & ~1; shift_value >>= 1) {
+        if (shift_value & 1) {
+            this->DUP();
+            bits++;
+        }
+
+        this->DUP();
+        this->IADD();
+    }
+
+    log.info("    %d had %d bits set", value, bits);
+    for (; bits > 0; bits--)
+        this->IADD();
+
+    if (sign)
+        this->ISUB();
 }

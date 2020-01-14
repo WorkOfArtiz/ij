@@ -38,6 +38,7 @@ class Assembler {
     virtual void PUSH_VAL(i32 value);
     virtual void SET_VAR(string var, i32 value);
     virtual void INC_VAR(string var, i32 value);
+    virtual void IMUL(i32 value); /* Pseudo-op for multiplication with constant */
 
     /* Note, WIDE is done automatically for vars */
     virtual void BIPUSH(i8 value) = 0;
