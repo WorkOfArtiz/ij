@@ -1,0 +1,7 @@
+import "math.ij"
+
+function __main__()
+{
+  return plus(0, 1);
+}
+
