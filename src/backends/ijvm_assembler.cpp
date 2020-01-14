@@ -76,6 +76,10 @@ void IJVMAssembler::label(string name) {
 
 void IJVMAssembler::function(string name, vector<string> args,
                              vector<string> vars) {
+    // Since the main 'function' is special, we skip it here
+    if (name == "main")
+        return;
+
     // log.info("New function made: %s", name.c_str());
     current_func = name;
     faddrs[name] = code.size();
