@@ -51,8 +51,14 @@ std::ostream &operator<<(std::ostream &o, const Token &t) {
 /*******************************************************************************
  * Source
  *******************************************************************************/
-Source::Source(std::string path)
+Source::Source(std::string path, std::string prev_path)
     : name{path}, line{1}, col{0}, src{new std::ifstream()} {
+
+    if (prev_path != "") {
+        size_t last = prev_path.find_last_of("/\\");
+        path = prev_path.substr(0, last + 1) + path;
+    }
+
     src->open(path, std::ifstream::in);
     if (!src->is_open())
         log.panic("Couldn't open file %s", path.c_str());
@@ -120,7 +126,12 @@ Lexer::Lexer() {
     keywords.clear();
 }
 
-void Lexer::add_source(string file_path) { srcs.emplace_back(file_path); }
+void Lexer::add_source(string file_path) {
+    if (srcs.empty())
+        srcs.emplace_back(file_path, "");
+    else
+        srcs.emplace_back(file_path, srcs.back().name);
+}
 
 void Lexer::read_token() {
     std::stringstream builder;

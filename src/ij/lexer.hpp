@@ -76,7 +76,7 @@ struct Source {
     size_t col;
     std::ifstream *src;
 
-    Source(std::string path);
+    Source(std::string path, std::string prev_path);
     Source(Source &&old);
     ~Source();
 

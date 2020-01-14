@@ -70,17 +70,21 @@ Program *parse_program(Lexer &l) {
     std::set<std::string> constants{{"main"}};
 
     l.set_skip({TokenType::Whitespace, TokenType::Nl, TokenType::Comment});
-    l.set_keywords({"constant", "function", "var",   "for",     "while",
-                    "if",       "else",     "label", "jas",     "break",
-                    "continue", "return",   "$getc", "$putc",   "$print",
-                    "$puts",    "$halt",    "$err",  "$malloc", "$push",
-                    "$pop"});
+    l.set_keywords({"constant", "function", "import","var",   "for",
+                    "while",    "if",       "else",  "label", "jas",
+                    "break",    "continue", "return",   "$getc", "$putc",
+                    "$print",   "$puts",    "$halt",    "$err",  "$malloc",
+                    "$push",    "$pop"});
 
     while (l.has_token()) {
-        expect(l, TokenType::Keyword, {"function", "constant"});
+        expect(l, TokenType::Keyword, {"function", "constant", "import"});
         Token t = l.peek(); /* copy token */
 
-        if (t.value == "constant") {
+        if (t.value == "import") {
+            l.discard();
+            l.add_source(l.get().value);
+        }
+        else if (t.value == "constant") {
             Constant *c = parse_constant(l);
             if (constants.count(c->name) == 1)
                 throw parse_error{t,
@@ -89,8 +93,7 @@ Program *parse_program(Lexer &l) {
             constants.insert(c->name);
             res->consts.push_back(c);
         }
-
-        if (t.value == "function") {
+        else if (t.value == "function") {
             Function *f = parse_function(l);
 
             if (constants.count(f->name))
