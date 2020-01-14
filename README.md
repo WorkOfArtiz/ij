@@ -1,14 +1,41 @@
 # IJ Compiler
 
-A small compiler written in C++ to compile ij code to Tannenbaum IJVM.
+A small compiler written in C++ to compile ij code to Tannenbaum IJVM (both assembly and machine code) and x86_64.
 
 ## ij compiler
 
+The current mode has both compile and run options, in which compiles compiles ij code to 
+jas, ijvm or raw amd64 instructions (mostly for debug purposes as ELF support isn't here yet).
+
 ```
-Usage: ij [options] in.ij
-   -o, --output   - output file (stdout by default)
-   -S, --assembly - generates jas assembly, compiled otherwise
-   -v, --verbose  - prints verbose info
+Usage: ij {compile,run} [options] in.ij
+```
+
+To compile run `ij compile`:
+
+```
+Usage: ij compile [options] in.ij
+       ij c       [options] in.ij
+          compiles the sources to jas/ijvm, options:
+
+          -o, --output   - output file (stdout by default)
+          -f, --format {jas, ijvm, x64}
+                         - which output format, default=jas
+          -v, --verbose  - prints verbose info
+          -d, --debug    - prints debug info
+```
+
+To JIT-compile and run:
+
+```
+Usage: ij run [options] in.ij
+       ij r   [options] in.ij
+    jit compiles the sources to x64 and executes them, options:
+
+    -i, --input    - IN reads from file instead of stdin
+    -o, --output   - OUT writes to file instead of stdout
+    -v, --verbose  - prints verbose info
+    -d, --debug    - prints debug info
 ```
 
 ## ij format
