@@ -1,7 +1,7 @@
 #ifndef EC_PARSE
 #define EC_PARSE
 #include "data.hpp"
-#include "lexer.hpp"
+#include <frontends/common/lexer.hpp>
 
 class parse_error : public std::runtime_error {
   public:

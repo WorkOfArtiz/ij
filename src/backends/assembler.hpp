@@ -7,7 +7,7 @@
 #include <sstream>
 #include <unordered_map>
 #include <map>
-#include "../types.h"
+#include <util/types.h>
 
 using std::ostream;
 using std::string;

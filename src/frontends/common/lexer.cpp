@@ -1,9 +1,10 @@
-#include "lexer.hpp"
-#include "../logger.hpp"
 #include <sstream>
 #include <fstream>
 #include <cassert>
 #include <cctype>
+
+#include "lexer.hpp"
+#include <util/logger.hpp>
 
 /*******************************************************************************
  * TokenType

@@ -1,6 +1,6 @@
 #include "ijvm_assembler.hpp"
-#include "../logger.hpp"
-#include "../util.hpp"
+#include <util/logger.hpp>
+#include <util/util.hpp>
 
 IJVMAssembler::IJVMAssembler() : current_func{"main"} {}
 

@@ -33,9 +33,10 @@
 #include <string>
 #include <vector>
 #include <iostream>
-#include "../backends/assembler.hpp"
-#include "../logger.hpp"
-#include "../util.hpp"
+
+#include <backends/assembler.hpp>
+#include <util/logger.hpp>
+#include <util/util.hpp>
 
 /* classes defined here */
 struct Program;

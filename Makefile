@@ -1,5 +1,6 @@
 CPPFLAGS_WARN=-Wall -Wextra -Werror -Wformat=2 -Wcast-qual -Wcast-align -Wwrite-strings -Wfloat-equal -Wpointer-arith -Wpedantic
-CPPFLAGS=-std=gnu++1y -g -O0 -fomit-frame-pointer -fno-builtin-log $(CPPFLAGS_WARN) -Ixbyak
+CPPFLAGS=-std=gnu++1y -g -O2 -fomit-frame-pointer -fno-builtin-log $(CPPFLAGS_WARN) -Ixbyak -Isrc
+#CPPFLAGS=-std=gnu++1y -s -Os -fomit-frame-pointer -fno-builtin-log $(CPPFLAGS_WARN) -Ixbyak
 
 SRCDIR=src
 OBJDIR=obj

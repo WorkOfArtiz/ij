@@ -1,10 +1,11 @@
 #include <set>
 #include "parse.hpp"
-#include "../logger.hpp"
-#include "../util.hpp"
 #include <climits>
 #include <initializer_list>
 #include <sstream>
+
+#include <util/logger.hpp>
+#include <util/util.hpp>
 
 static void expect(Lexer &l, TokenType type, bool rm = false) {
     if (!l.is_next(type))

@@ -1,6 +1,6 @@
 #include "assembler.hpp"
-#include "../logger.hpp"
-#include "../util.hpp"
+#include <util/logger.hpp>
+#include <util/util.hpp>
 
 bool Assembler::is_constant(string name) {
     return constant_map.count(name) != 0;

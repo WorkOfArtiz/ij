@@ -1,5 +1,5 @@
 #include "assembler.hpp"
-#include "../buffer.hpp"
+#include <util/buffer.hpp>
 
 // clang-format off
 /* opcodes */

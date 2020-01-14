@@ -1,5 +1,5 @@
 #include "data.hpp"
-#include "../util.hpp"
+#include <util/util.hpp>
 
 /* All ostream operator << overloads */
 std::ostream &operator<<(std::ostream &o, const Expr &e) {

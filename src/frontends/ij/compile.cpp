@@ -1,5 +1,5 @@
 #include "data.hpp"
-#include "../util.hpp"
+#include <util/util.hpp>
 
 /* Fills in the compile functions of the various statements */
 bool in(std::string needle, std::initializer_list<std::string> hay) {

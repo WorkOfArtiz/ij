@@ -3,14 +3,11 @@
 #include <fstream>
 #include <memory>
 
-#include "logger.hpp"
-#include "backends/ijvm_assembler.hpp"
-#include "backends/jas_assembler.hpp"
-#include "backends/x64_assembler.hpp"
-#include "ij/parse.hpp"
-//#include "buffer.hpp"
-//#include "ijvm.hpp"
-#include "ij/lexer.hpp"
+#include <frontends/ij/parse.hpp>
+#include <backends/ijvm_assembler.hpp>
+#include <backends/jas_assembler.hpp>
+#include <backends/x64_assembler.hpp>
+#include <util/logger.hpp>
 
 /*
  * Add default main, calling __main__, this is to avoid
@@ -223,10 +220,10 @@ int main(int argc, char **argv) {
         if (o.run) {
             if (X64Assembler *x64 = dynamic_cast<X64Assembler *>(a.get())) {
                 if (!o.input_file.empty())
-                    freopen(o.input_file.c_str(), "r", stdin);
+                    assert(freopen(o.input_file.c_str(), "r", stdin));
 
                 if (!o.output_file.empty())
-                    freopen(o.output_file.c_str(), "w+", stdout);
+                    assert(freopen(o.output_file.c_str(), "w+", stdout));
 
                 x64->run();
             } else {
