@@ -35,6 +35,7 @@ Expr *parse_expr(Lexer &l);         /* delegates to types of statements */
 Expr *parse_compare_expr(Lexer &l); /* e.g. a == 3 */
 Expr *parse_logic_expr(Lexer &l);   /* e.g. a | 3, a & b */
 Expr *parse_arit_expr(Lexer &l);    /* e.g. a + b, a - b */
+Expr *parse_mul_expr(Lexer &l);     /* e.g. a * b  */
 Expr *parse_basic_expr(Lexer &l);   /* e.g. a, 2, (1 + 3), f(1) */
 Expr *parse_fcall(std::string fname, Lexer &l);
 

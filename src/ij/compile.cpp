@@ -87,8 +87,21 @@ void OpExpr::compile(Program &p, Assembler &a, id_gen &g) const {
         left->compile(p, a, g);
         right->compile(p, a, g);
         compile_arit_op(op[0], a);
+    } else if (op == "*") {
+        log.info("Special IMUL case triggered");
+        if (ValueExpr *val = dynamic_cast<ValueExpr *>(left)) {
+            right->compile(p, a, g);
+            a.IMUL(val->value);
+        } else if (ValueExpr *val = dynamic_cast<ValueExpr *>(right)) {
+            left->compile(p, a, g);
+            a.IMUL(val->value);
+        } else {
+            log.info("neither is constant");
+            throw std::runtime_error{
+                "multiplication only supported with constant"};
+        }
     } else {
-        std::runtime_error{"unsupported operator found: " + op};
+        throw std::runtime_error{"unsupported operator found: " + op};
     }
 }
 
@@ -101,7 +114,7 @@ void IdentExpr::compile(Program &, Assembler &a, id_gen &) const {
         throw std::runtime_error{"Couldn't find reference to " + identifier};
 }
 
-void ValueExpr::compile(Program &, Assembler &a, id_gen&) const {
+void ValueExpr::compile(Program &, Assembler &a, id_gen &) const {
     a.PUSH_VAL(value); // takes care of BIPUSH limitations
 }
 
@@ -116,8 +129,8 @@ void FunExpr::compile(Program &p, Assembler &a, id_gen &g) const {
     a.INVOKEVIRTUAL(fname);
 }
 
-void StmtExpr::compile(Program &p, Assembler &a, id_gen &g) const { 
-    stmt->compile(p, a, g); 
+void StmtExpr::compile(Program &p, Assembler &a, id_gen &g) const {
+    stmt->compile(p, a, g);
 }
 
 void ArrAccessExpr::compile(Program &p, Assembler &a, id_gen &g) const {
@@ -152,8 +165,8 @@ void RetStmt::compile(Program &p, Assembler &a, id_gen &g) const {
     a.IRETURN();
 }
 
-static void compile_comparison(Program &p, Assembler &a, id_gen &g, OpExpr *con, std::string if_true,
-                               std::string if_false) {
+static void compile_comparison(Program &p, Assembler &a, id_gen &g, OpExpr *con,
+                               std::string if_true, std::string if_false) {
     if (con->op == "<") {
         con->left->compile(p, a, g);
         con->right->compile(p, a, g);
@@ -248,11 +261,13 @@ void IfStmt::compile(Program &p, Assembler &a, id_gen &gen) const {
     }
 
     size_t if_id = gen.gif();
+    bool else_disabled = elses->empty();
 
     std::string if_start = sprint("if%d_condition", if_id);
     std::string if_then = sprint("if%d_then", if_id);
-    std::string if_else = sprint("if%d_else", if_id);
+    // std::string if_else = sprint("if%d_else", if_id);
     std::string if_end = sprint("if%d_end", if_id);
+    std::string if_else = else_disabled ? if_end : sprint("if%d_else", if_id);
 
     a.label(if_start);
     if (OpExpr *con = dynamic_cast<OpExpr *>(condition)) {
@@ -272,13 +287,16 @@ void IfStmt::compile(Program &p, Assembler &a, id_gen &gen) const {
 
     // GOTO only needs to be added if there is
     // code to jump over
-    if (!elses->empty()) {
-        a.GOTO(if_end);
+    if (!else_disabled) {
+        if (!elses->is_terminal())
+            a.GOTO(if_end);
 
         a.label(if_else);
         elses->compile(p, a, gen);
-    } else
-        a.label(if_else);
+    }
+    // ignore entire else branch
+    // else
+    //     a.label(if_else);
 
     a.label(if_end);
 }
@@ -350,8 +368,6 @@ void Function::compile(Program &p, Assembler &a) const {
     std::vector<std::string> vars;
     stmts->find_vars(vars);
 
-    if (name != "main")
-        a.function(name, args, vars);
-
+    a.function(name, args, vars);
     stmts->compile(p, a, generator);
 }

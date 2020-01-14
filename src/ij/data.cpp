@@ -104,7 +104,9 @@ void FunExpr::write(std::ostream &o) const {
     o << ")";
 }
 
-void StmtExpr::write(std::ostream &o) const { o << "StmtExpr(" << *stmt << ")"; }
+void StmtExpr::write(std::ostream &o) const {
+    o << "StmtExpr(" << *stmt << ")";
+}
 
 void ArrAccessExpr::write(std::ostream &o) const {
     o << "ArrayAccess(" << *array << "[" << *index << "])";
@@ -166,7 +168,7 @@ void ForStmt::write(std::ostream &o) const {
         o << "empty";
 
     o << ")";
-    o << body;
+    o << *body;
 }
 
 void IfStmt::write(std::ostream &o) const {
@@ -215,8 +217,10 @@ option<i32> OpExpr::val() const {
     else if (op == "+")     return left +  right;
     else if (op == "-")     return left -  right;
     else if (op == "|")     return left |  right;
-    else // if (op == "&") 
-        return left &  right;
+    else if (op == "*")     return left *  right;
+    else if (op == "&")     return left &  right;
+
+    throw std::runtime_error{"unsupported operator in OpExpr"};
     // clang-format on
 }
 
@@ -264,6 +268,25 @@ const std::unordered_map<string, JasType> jas_type_mapping =
     {"NETCLOSE",      JasType::NETCLOSE},
 };
 // clang-format on
+bool CompStmt::is_terminal() const {
+    for (Stmt *s : stmts) {
+        if (CompStmt *c = dynamic_cast<CompStmt *>(s)) {
+            if (c->is_terminal())
+                return true;
+        } else if (JasStmt *j = dynamic_cast<JasStmt *>(s)) {
+            if (in(j->instr_type,
+                   {JasType::IRETURN, JasType::ERR, JasType::HALT}))
+                return true;
+        } else if (dynamic_cast<BreakStmt *>(s))
+            return true;
+        else if (dynamic_cast<ContinueStmt *>(s))
+            return true;
+        else if (dynamic_cast<RetStmt *>(s))
+            return true;
+    }
+
+    return false;
+}
 
 /* OpExpr methods */
 bool OpExpr::is_comparison() const {

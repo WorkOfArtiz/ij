@@ -70,10 +70,11 @@ Program *parse_program(Lexer &l) {
     std::set<std::string> constants{{"main"}};
 
     l.set_skip({TokenType::Whitespace, TokenType::Nl, TokenType::Comment});
-    l.set_keywords({"constant", "function", "var", "for", "while", "if", "else", "label",
-                    "jas", "break", "continue", "return", "$getc", "$putc",
-                    "$print", "$puts", "$halt", "$err", "$malloc",
-                    "$push", "$pop"});
+    l.set_keywords({"constant", "function", "var",   "for",     "while",
+                    "if",       "else",     "label", "jas",     "break",
+                    "continue", "return",   "$getc", "$putc",   "$print",
+                    "$puts",    "$halt",    "$err",  "$malloc", "$push",
+                    "$pop"});
 
     while (l.has_token()) {
         expect(l, TokenType::Keyword, {"function", "constant"});
@@ -264,9 +265,8 @@ Stmt *parse_statement(Lexer &l) /* delegates to types of statements */
         expect(l, TokenType::BracesOpen, true);
         s = new ExprStmt(parse_expr(l), false);
         expect(l, TokenType::BracesClose, true);
-    }
-    else
-    // if (!l.is_next(TokenType::Keyword))
+    } else
+        // if (!l.is_next(TokenType::Keyword))
         s = parse_expr_stmt(l, true);
     // else
     //     throw parse_error{l.peek(), "Expected a statement"};
@@ -327,8 +327,7 @@ Stmt *parse_for_stmt(Lexer &l) /* e.g. for (i = 0; i < 3; i += 1) stmt */
     return new ForStmt(init, condition, update, parse_compound_stmt(l));
 }
 
-Stmt *parse_while_stmt(Lexer &l)
-{
+Stmt *parse_while_stmt(Lexer &l) {
     Expr *condition = nullptr;
 
     expect(l, TokenType::Keyword, "while", true);
@@ -465,10 +464,24 @@ static bool is_arit_op(std::string op) { return op == "+" || op == "-"; }
 
 Expr *parse_arit_expr(Lexer &l) /* e.g. a + b, a - b */
 {
-    Expr *res = parse_basic_expr(l);
+    Expr *res = parse_mul_expr(l);
 
     while (l.peek().type == TokenType::Operator) {
         if (!is_arit_op(l.peek().value))
+            break;
+
+        std::string op = l.get().value; // skip operator
+        res = new OpExpr(op, res, parse_mul_expr(l));
+    }
+
+    return res;
+}
+
+Expr *parse_mul_expr(Lexer &l) {
+    Expr *res = parse_basic_expr(l);
+
+    while (l.peek().type == TokenType::Operator) {
+        if (l.peek().value != "*")
             break;
 
         std::string op = l.get().value; // skip operator
@@ -506,23 +519,18 @@ Expr *parse_basic_expr(Lexer &l) /* e.g. a, 2, (1 + 3), f(1) */
         expect(l, TokenType::BracesOpen, true);
         expect(l, TokenType::BracesClose, true);
         res = new StmtExpr(new JasStmt("IN"));
-    }
-    else if (l.is_next(TokenType::Keyword, "$push")) {
+    } else if (l.is_next(TokenType::Keyword, "$push")) {
         l.discard();
         expect(l, TokenType::BracesOpen, true);
-        res = new StmtExpr(new CompStmt({
-            parse_expr_stmt(l, false),
-            new JasStmt("DUP")
-        }));
+        res = new StmtExpr(
+            new CompStmt({parse_expr_stmt(l, false), new JasStmt("DUP")}));
         expect(l, TokenType::BracesClose, true);
-    }
-    else if (l.is_next(TokenType::Keyword, "$pop")) {
+    } else if (l.is_next(TokenType::Keyword, "$pop")) {
         l.discard();
         expect(l, TokenType::BracesOpen, true);
         expect(l, TokenType::BracesClose, true);
         res = new StmtExpr(new CompStmt({}));
-    }
-    else if (l.is_next(TokenType::BracesOpen)) {
+    } else if (l.is_next(TokenType::BracesOpen)) {
         expect(l, TokenType::BracesOpen, true);
         res = parse_expr(l);
         expect(l, TokenType::BracesClose, true);

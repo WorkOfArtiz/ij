@@ -43,6 +43,7 @@ struct Function;
 struct Constant;
 struct Stmt;
 struct Expr;
+struct OpExpr;
 struct ValueExpr;
 struct id_gen;
 

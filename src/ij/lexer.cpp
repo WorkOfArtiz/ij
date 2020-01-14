@@ -22,8 +22,8 @@ std::ostream &operator<<(std::ostream &o, const TokenType &t)
     case TokenType::Whitespace:        return o << "Whitespace";
     case TokenType::BracesOpen:        return o << "BracesOpen";
     case TokenType::BracesClose:       return o << "BracesClose";
-    case TokenType::BlockOpen:        return o << "BracesOpen";
-    case TokenType::BlockClose:       return o << "BracesClose";
+    case TokenType::BlockOpen:         return o << "BracesOpen";
+    case TokenType::BlockClose:        return o << "BracesClose";
     case TokenType::CurlyOpen:         return o << "CurlyOpen";
     case TokenType::CurlyClose:        return o << "CurlyClose";
     case TokenType::Comma:             return o << "Comma";
