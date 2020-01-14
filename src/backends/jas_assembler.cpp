@@ -32,7 +32,7 @@ void JASAssembler::compile(ostream &o) {
 void JASAssembler::label(string name) { cs << name << ":\n"; }
 void JASAssembler::function(string name, vector<string> args,
                             vector<string> vars) {
-    // Since the main 'function' is special, we skip it here 
+    // Since the main 'function' is special, we skip it here
     if (name == "main")
         return;
 
