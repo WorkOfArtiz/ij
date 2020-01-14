@@ -1,10 +1,12 @@
 #include <iostream>
+#include <vector>
 #include <fstream>
 #include <memory>
 
 #include "logger.hpp"
 #include "backends/ijvm_assembler.hpp"
 #include "backends/jas_assembler.hpp"
+#include "backends/x64_assembler.hpp"
 #include "ij/parse.hpp"
 //#include "buffer.hpp"
 //#include "ijvm.hpp"
@@ -24,72 +26,179 @@ static void add_main(Program &p) {
     p.funcs.insert(p.funcs.begin(), f);
 }
 
-static void parse_options(int argc, char **argv, string &input, string &output,
-                          bool &assembly) {
-    int positional = -1;
-    assembly = false;
+struct options {
+    bool run = false;             // whether we run or compile
+    std::string src_file;         // file to be compiled
+    std::string input_file = "";  // only relevant for run
+    std::string output_file = ""; // stdout if empty
+                                  // if run -> file to replace stdout
+                                  // else      file to write program to
+    std::string fmt = "jas";      // only relevant for compile
+                             //   what is the output, options: {jas, jit, x64}
+    bool verbose = false; // whether verbose output is given
+    bool debug = false;   // whether debug output is given
+};
 
-    for (int i = 1; i < argc; i++) {
-        std::string arg = argv[i];
+static std::vector<std::string> args(int argc, char **argv) {
+    std::vector<std::string> args;
+
+    for (int i = 1; i < argc; i++)
+        args.emplace_back(argv[i]);
+
+    return args;
+}
+
+static void print_basic_help(string cmd) {
+    std::cerr << "Usage: ij {compile,run} [options] in.ij\n";
+
+    if (!cmd.empty())
+        std::cerr << "    invalid command: " << cmd << std::endl;
+
+    exit(1);
+}
+
+static void print_compile_help(std::string msg) {
+    std::cerr << "Usage: ij compile [options] in.ij\n"
+              << "       ij c       [options] in.ij\n"
+              << "          compiles the sources to jas/ijvm, options:\n\n"
+              << "          -o, --output   - output file (stdout by default)\n"
+              << "          -f, --format {jas, ijvm, x64}\n"
+              << "                         - which output format, default=jas\n"
+              << "          -v, --verbose  - prints verbose info\n"
+              << "          -d, --debug    - prints debug info\n\n";
+
+    if (!msg.empty())
+        log.panic("Error: %s", msg.c_str());
+
+    exit(-1);
+}
+
+static void print_run_help(std::string msg) {
+    std::cerr
+        << "Usage: ij run [options] in.ij\n"
+        << "       ij r   [options] in.ij\n"
+        << "    jit compiles the sources to x64 and executes them, options:\n\n"
+        << "    -i, --input    - IN reads from file instead of stdin\n"
+        << "    -o, --output   - OUT writes to file instead of stdout\n"
+        << "    -v, --verbose  - prints verbose info\n"
+        << "    -d, --debug    - prints debug info\n";
+
+    if (!msg.empty())
+        log.panic("Error: %s", msg.c_str());
+
+    exit(-1);
+}
+
+static void parse_compile_options(std::vector<std::string> args, options &o) {
+    for (unsigned i = 1; i < args.size(); i++) {
+        std::string &arg = args[i];
+
         if (arg == "-h" || arg == "--help") {
-            std::cerr << "Usage: ij [options] in.ij" << std::endl
-                      << "   -o, --output   - output file (stdout by default)"
-                      << std::endl
-                      << "   -S, --assembly - generates jas assembly, compiled "
-                         "otherwise"
-                      << std::endl
-                      << "   -v, --verbose  - prints verbose info" << std::endl
-                      << "   -d, --debug    - prints debug info" << std::endl;
-            exit(-1);
+            print_compile_help("");
         } else if (arg == "-o" || arg == "--output") {
-            output = argv[++i];
-        } else if (arg == "-S" || arg == "--assembly") {
-            assembly = true;
+            if (i + 1 < args.size())
+                o.output_file = args[++i];
+            else
+                print_compile_help("output requires an argument");
+        } else if (arg == "-f" || arg == "--format") {
+            if (i + 1 >= args.size())
+                print_compile_help("format requires jas, ijvm or x64 as arg");
+            else if (in(args[i + 1], {"jas", "ijvm", "x64"}))
+                o.fmt = args[++i];
+            else
+                print_compile_help(
+                    sprint("argument %s is invalid", args[i + 1]));
         } else if (arg == "-v" || arg == "--verbose") {
             log.set_log_level(LogLevel::success);
         } else if (arg == "-d" || arg == "--debug") {
             log.set_log_level(LogLevel::info);
-        } else if (positional == -1) {
-            input = arg;
-            positional = 0;
+        } else if (arg[0] == '-') {
+            print_compile_help(concat("unknown option ", arg, " is invalid"));
+        } else if (o.src_file.empty()) {
+            o.src_file = arg;
         } else {
-            if (arg[0] == '-')
-                std::cerr << "Unknown option " << arg;
-            else
-                std::cerr << "Only one positional argument allowed: '" << arg
-                          << "'";
-
-            std::cerr << std::endl;
-            exit(-1);
+            print_compile_help(
+                concat("only one positional argument supported, found ",
+                       o.src_file, " and ", arg));
         }
     }
 
-    if (positional == -1) {
-        std::cerr << "Not enough options" << std::endl;
-        exit(-1);
+    if (o.src_file.empty())
+        print_compile_help(sprint("Missing source file!"));
+}
+
+static void parse_run_options(std::vector<std::string> args, options &o) {
+    o.fmt = "x64"; // always requires the x64 architecture
+
+    for (unsigned i = 1; i < args.size(); i++) {
+        std::string &arg = args[i];
+
+        if (arg == "-h" || arg == "--help") {
+            print_run_help("");
+        } else if (arg == "-i" || arg == "--input") {
+            if (i + 1 < args.size())
+                o.input_file = args[++i];
+            else
+                print_run_help("input requires an argument");
+        } else if (arg == "-o" || arg == "--output") {
+            if (i + 1 < args.size())
+                o.output_file = args[++i];
+            else
+                print_run_help("output requires an argument");
+        } else if (arg == "-v" || arg == "--verbose") {
+            log.set_log_level(LogLevel::success);
+        } else if (arg == "-d" || arg == "--debug") {
+            log.set_log_level(LogLevel::info);
+        } else if (arg[0] == '-') {
+            print_run_help(concat("unknown option ", arg, " is invalid"));
+        } else if (o.src_file.empty()) {
+            o.src_file = arg;
+        } else {
+            print_run_help(
+                concat("only one positional argument supported, found ",
+                       o.src_file, " and ", arg));
+        }
+    }
+
+    if (o.src_file.empty())
+        print_run_help(sprint("Missing source file!"));
+}
+
+static void parse_options(std::vector<std::string> args, options &o) {
+    if (args.empty()) {
+        print_basic_help("No command given");
+    } else if (args[0] == "r" || args[0] == "run") {
+        log.info("Executing the run command");
+        parse_run_options(args, o);
+        o.run = true;
+        return;
+    } else if (args[0] == "c" || args[0] == "compile") {
+        log.info("Executing the compile command");
+        parse_compile_options(args, o);
+        return;
+    } else {
+        print_basic_help(concat("Didn't recognise command ", args[0]));
     }
 }
 
 int main(int argc, char **argv) {
-    bool assembly;
-    string input = "";
-    string output = "";
-
-    parse_options(argc, argv, input, output, assembly);
+    options o;
+    parse_options(args(argc, argv), o);
 
     std::unique_ptr<Assembler> a;
 
-    if (assembly)
+    if (o.fmt == "jas")
         a = std::make_unique<JASAssembler>();
-    else
+    else if (o.fmt == "ijvm")
         a = std::make_unique<IJVMAssembler>();
+    else
+        a = std::make_unique<X64Assembler>();
 
     Lexer l;
 
     try {
-        log.info("reading file %s", input.c_str());
-
-        l.add_source(input);
+        log.info("reading file %s", o.src_file.c_str());
+        l.add_source(o.src_file);
 
         std::unique_ptr<Program> p{parse_program(l)};
         add_main(*p);
@@ -108,25 +217,42 @@ int main(int argc, char **argv) {
             log.info("Compiling function %s", fiter->name.c_str());
             fiter->compile(*p, *a);
         }
-        if (output == "")
-            a->compile(std::cout);
-        else {
-            log.info("Writing to file %s", output.c_str());
-
-            std::ofstream out_file;
-            out_file.open(output, std::ios::binary);
-            if (!out_file.is_open())
-                log.panic("File %s couldn't be opened for writing",
-                          output.c_str());
-
-            a->compile(out_file);
-            out_file.close();
-        }
 
         log.success("Successfully compiled program");
 
+        if (o.run) {
+            if (X64Assembler *x64 = dynamic_cast<X64Assembler *>(a.get())) {
+                if (!o.input_file.empty())
+                    freopen(o.input_file.c_str(), "r", stdin);
+
+                if (!o.output_file.empty())
+                    freopen(o.output_file.c_str(), "w+", stdout);
+
+                x64->run();
+            } else {
+                std::cerr << "X64 assembler could not be cast back?"
+                          << std::endl;
+            }
+        } else {
+            if (o.output_file.empty()) {
+                log.info("Writing to stdout");
+                a->compile(std::cout);
+            } else {
+                log.info("Writing to file %s", o.output_file.c_str());
+
+                std::ofstream out_file;
+                out_file.open(o.output_file, std::ios::binary);
+                if (!out_file.is_open())
+                    log.panic("File %s couldn't be opened for writing",
+                              o.output_file.c_str());
+
+                a->compile(out_file);
+                out_file.close();
+            }
+        }
+
     } catch (std::runtime_error &r) {
-        log.panic("while compiling %s, %s", input.c_str(), r.what());
+        log.panic("while compiling %s, %s", o.src_file.c_str(), r.what());
     }
     return 0;
 }

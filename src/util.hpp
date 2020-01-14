@@ -7,8 +7,8 @@
 #include "logger.hpp"
 
 /* in function */
-template <class T>
-constexpr inline bool in(const T &value, std::initializer_list<T> options) {
+template <class T, class S>
+constexpr inline bool in(const T &value, std::initializer_list<S> options) {
     for (const T &i : options)
         if (value == i)
             return true;
@@ -46,8 +46,8 @@ template <class T> inline void push_front(std::vector<T> v, T t) {
     std::rotate(v.rbegin(), v.rbegin() + 1, v.rend());
 }
 
-template <class Container>
-static inline std::string join(std::string delim, Container values) {
+template <class Container, class Text>
+static inline std::string join(Text delim, Container values) {
     std::stringstream s;
 
     for (auto iter = values.begin(); iter != values.end();) {
@@ -57,6 +57,23 @@ static inline std::string join(std::string delim, Container values) {
     }
 
     return s.str();
+}
+
+static inline void concat_helper(std::string &) { return; }
+
+template <class Stringy, class... Stringies>
+static inline void concat_helper(std::string &s, Stringy &t,
+                                 Stringies... other) {
+    s += t;
+    concat_helper(s, other...);
+}
+
+template <class... Strinigies>
+static inline std::string concat(Strinigies... args) {
+    std::string s;
+    s.reserve(sizeof...(args) * 10);
+    concat_helper(s, args...);
+    return s;
 }
 
 static inline void sprint_helper(std::stringstream &s, const char *fmt) {
