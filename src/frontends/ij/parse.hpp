@@ -2,14 +2,7 @@
 #define EC_PARSE
 #include "data.hpp"
 #include <frontends/common/lexer.hpp>
-
-class parse_error : public std::runtime_error {
-  public:
-    parse_error(Token &t, std::string msg);
-
-  private:
-    std::string make_what(Token &t, std::string msg);
-};
+#include <frontends/common/parse_error.hpp>
 
 /* High level functions */
 Program *parse_program(Lexer &l);
