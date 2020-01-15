@@ -1,6 +1,7 @@
 #ifndef UTIL_H
 #define UTIL_H
 #include <sstream>
+#include <string>
 #include <array>
 #include <vector>
 #include <algorithm>
@@ -135,4 +136,7 @@ template <typename T> struct option {
   private:
     T *store;
 };
+
+bool in(std::string needle, std::initializer_list<std::string> hay);
+
 #endif

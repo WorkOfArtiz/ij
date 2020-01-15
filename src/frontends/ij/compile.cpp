@@ -1,13 +1,42 @@
+#include "compile.hpp"
 #include "data.hpp"
+#include <memory>
 #include <util/util.hpp>
 
-/* Fills in the compile functions of the various statements */
-bool in(std::string needle, std::initializer_list<std::string> hay) {
-    for (auto straw : hay)
-        if (straw == needle)
-            return true;
+/*
+ * Add default main, calling __main__, this is to avoid
+ * the shitty local vars of the entry point problem.
+ */
+static void add_main(Program &p) {
+    Function *f = new Function(
+        "main", {},
+        new CompStmt({new IfStmt(new FunExpr("__main__", {}),
+                                 new CompStmt({new JasStmt{"ERR"}}),
+                                 new CompStmt({new JasStmt{"HALT"}}))}));
 
-    return false;
+    p.funcs.insert(p.funcs.begin(), f);
+}
+
+void ij_compile(Lexer &l, Assembler &a) {
+    std::unique_ptr<Program> p{parse_program(l)};
+    add_main(*p);
+
+    log.info("constants %lu", p->consts.size());
+    for (auto c : p->consts) {
+        log.info("    - %s", cstr(*c));
+        a.constant(c->name, c->value);
+    }
+
+    log.info("functions %lu", p->funcs.size());
+    for (auto f : p->funcs)
+        log.info("function: %s", cstr(*f));
+
+    for (auto fiter : p->funcs) {
+        log.info("Compiling function %s", fiter->name.c_str());
+        fiter->compile(*p, a);
+    }
+
+    log.success("Successfully compiled program");
 }
 
 static void compile_arit_op(char op, Assembler &a) {

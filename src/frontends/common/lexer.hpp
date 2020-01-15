@@ -115,6 +115,12 @@ class Lexer {
     void set_skip(std::initializer_list<TokenType> types);
     void set_keywords(std::initializer_list<std::string> keywords);
 
+    /* expecting a certain block */
+    void expect(TokenType type, bool rm = false);
+    void expect(TokenType type, std::initializer_list<std::string> values, bool rm = false);
+    void expect(TokenType type, std::string value, bool rm = false);
+    void expect(std::initializer_list<TokenType> types, bool rm = false);
+
   private:
     bool has_symbol();
     void read_token(); /* reads token and appends to back of cache */

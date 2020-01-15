@@ -3,25 +3,11 @@
 #include <fstream>
 #include <memory>
 
-#include <frontends/ij/parse.hpp>
+#include <frontends/ij/compile.hpp>
 #include <backends/ijvm_assembler.hpp>
 #include <backends/jas_assembler.hpp>
 #include <backends/x64_assembler.hpp>
 #include <util/logger.hpp>
-
-/*
- * Add default main, calling __main__, this is to avoid
- * the shitty local vars of the entry point problem.
- */
-static void add_main(Program &p) {
-    Function *f = new Function(
-        "main", {},
-        new CompStmt({new IfStmt(new FunExpr("__main__", {}),
-                                 new CompStmt({new JasStmt{"ERR"}}),
-                                 new CompStmt({new JasStmt{"HALT"}}))}));
-
-    p.funcs.insert(p.funcs.begin(), f);
-}
 
 struct options {
     bool run = false;             // whether we run or compile
@@ -178,6 +164,39 @@ static void parse_options(std::vector<std::string> args, options &o) {
     }
 }
 
+static void x64_run(options &o, Assembler &a) {
+    if (X64Assembler *x64 = dynamic_cast<X64Assembler *>(&a)) {
+        if (!o.input_file.empty())
+            assert(freopen(o.input_file.c_str(), "r", stdin));
+
+        if (!o.output_file.empty())
+            assert(freopen(o.output_file.c_str(), "w+", stdout));
+
+        x64->run();
+    } else {
+        log.panic("Format might have been wrong");
+    }
+}
+
+static void compile_to_file(options &o, Assembler &a) {
+    if (o.output_file.empty()) {
+        log.info("Writing to stdout");
+        a.compile(std::cout);
+    } 
+    else {
+        log.info("Writing to file %s", o.output_file.c_str());
+
+        std::ofstream out_file;
+        out_file.open(o.output_file, std::ios::binary);
+        if (!out_file.is_open())
+            log.panic("File %s couldn't be opened for writing",
+                        o.output_file.c_str());
+
+        a.compile(out_file);
+        out_file.close();
+    }
+}
+
 int main(int argc, char **argv) {
     options o;
     parse_options(args(argc, argv), o);
@@ -196,56 +215,12 @@ int main(int argc, char **argv) {
     try {
         log.info("reading file %s", o.src_file.c_str());
         l.add_source(o.src_file);
-
-        std::unique_ptr<Program> p{parse_program(l)};
-        add_main(*p);
-
-        log.info("constants %lu", p->consts.size());
-        for (auto c : p->consts) {
-            log.info("    - %s", cstr(*c));
-            a->constant(c->name, c->value);
-        }
-
-        log.info("functions %lu", p->funcs.size());
-        for (auto f : p->funcs)
-            log.info("function: %s", cstr(*f));
-
-        for (auto fiter : p->funcs) {
-            log.info("Compiling function %s", fiter->name.c_str());
-            fiter->compile(*p, *a);
-        }
-
-        log.success("Successfully compiled program");
+        ij_compile(l, *a);
 
         if (o.run) {
-            if (X64Assembler *x64 = dynamic_cast<X64Assembler *>(a.get())) {
-                if (!o.input_file.empty())
-                    assert(freopen(o.input_file.c_str(), "r", stdin));
-
-                if (!o.output_file.empty())
-                    assert(freopen(o.output_file.c_str(), "w+", stdout));
-
-                x64->run();
-            } else {
-                std::cerr << "X64 assembler could not be cast back?"
-                          << std::endl;
-            }
+            x64_run(o, *a);
         } else {
-            if (o.output_file.empty()) {
-                log.info("Writing to stdout");
-                a->compile(std::cout);
-            } else {
-                log.info("Writing to file %s", o.output_file.c_str());
-
-                std::ofstream out_file;
-                out_file.open(o.output_file, std::ios::binary);
-                if (!out_file.is_open())
-                    log.panic("File %s couldn't be opened for writing",
-                              o.output_file.c_str());
-
-                a->compile(out_file);
-                out_file.close();
-            }
+            compile_to_file(o, *a);
         }
 
     } catch (std::runtime_error &r) {

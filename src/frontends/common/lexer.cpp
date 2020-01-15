@@ -4,7 +4,9 @@
 #include <cctype>
 
 #include "lexer.hpp"
+#include "parse_error.hpp"
 #include <util/logger.hpp>
+#include <util/util.hpp>
 
 /*******************************************************************************
  * TokenType
@@ -375,4 +377,41 @@ void Lexer::set_skip(std::initializer_list<TokenType> types) {
 void Lexer::set_keywords(std::initializer_list<std::string> keywords) {
     this->keywords.clear();
     this->keywords.insert(keywords.begin(), keywords.end());
+}
+
+void Lexer::expect(TokenType type, bool rm) {
+    if (!is_next(type))
+        throw parse_error{peek(), "Wrong token type was found, expected type " + str(type)};
+
+    if (rm)
+        discard();
+}
+
+void Lexer::expect(TokenType type, std::initializer_list<std::string> values, bool rm) {
+    if (!is_next(type, values))
+        throw parse_error{peek(), "Wrong token value, expected one of " + join(", ", values)};
+
+    if (rm)
+        discard();
+}
+
+void Lexer::expect(TokenType type, std::string value, bool rm) {
+    if (!is_next(type, value))
+        throw parse_error{peek(), "Wrong token value, expected " + value};
+
+    if (rm)
+        discard();
+}
+
+void Lexer::expect(std::initializer_list<TokenType> types, bool rm) {
+    bool matches = false;
+
+    for (const TokenType &t : types)
+        matches |= is_next(t);
+
+    if (!matches)
+        throw parse_error{peek(), sprint("Wrong token type, expected one of {%s}", join(", ", types))};
+
+    if (rm)
+        discard();
 }

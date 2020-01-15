@@ -7,50 +7,6 @@
 #include <util/logger.hpp>
 #include <util/util.hpp>
 
-static void expect(Lexer &l, TokenType type, bool rm = false) {
-    if (!l.is_next(type))
-        throw parse_error{
-            l.peek(), "Wrong token type was found, expected type " + str(type)};
-
-    if (rm)
-        l.discard();
-}
-
-static void expect(Lexer &l, TokenType type,
-                   std::initializer_list<std::string> values, bool rm = false) {
-    if (!l.is_next(type, values))
-        throw parse_error{l.peek(), "Wrong token value, expected one of " +
-                                        join(", ", values)};
-
-    if (rm)
-        l.discard();
-}
-
-static void expect(Lexer &l, TokenType type, std::string value,
-                   bool rm = false) {
-    if (!l.is_next(type, value))
-        throw parse_error{l.peek(), "Wrong token value, expected " + value};
-
-    if (rm)
-        l.discard();
-}
-
-static void expect(Lexer &l, std::initializer_list<TokenType> types,
-                   bool rm = false) {
-    bool matches = false;
-
-    for (const TokenType &t : types)
-        matches |= l.is_next(t);
-
-    if (!matches)
-        throw parse_error{l.peek(),
-                          sprint("Wrong token type, expected one of {%s}",
-                                 join(", ", types))};
-
-    if (rm)
-        l.discard();
-}
-
 /* High level functions */
 Program *parse_program(Lexer &l) {
     Program *res = new Program();
@@ -64,7 +20,7 @@ Program *parse_program(Lexer &l) {
                     "$push",    "$pop"});
 
     while (l.has_token()) {
-        expect(l, TokenType::Keyword, {"function", "constant", "import"});
+        l.expect(TokenType::Keyword, {"function", "constant", "import"});
         Token t = l.peek(); /* copy token */
 
         if (t.value == "import") {
@@ -95,12 +51,12 @@ Program *parse_program(Lexer &l) {
 }
 
 Constant *parse_constant(Lexer &l) {
-    expect(l, TokenType::Keyword, "constant", true);
+    l.expect(TokenType::Keyword, "constant", true);
     std::string name = parse_identifier(l);
 
-    expect(l, TokenType::Operator, "=", true);
+    l.expect(TokenType::Operator, "=", true);
     int32_t value = parse_value(l, INT32_MIN, INT32_MAX);
-    expect(l, TokenType::SemiColon, ";", true);
+    l.expect(TokenType::SemiColon, ";", true);
 
     return new Constant(name, value);
 }
@@ -109,7 +65,7 @@ CompStmt *parse_compound_stmt(Lexer &l) {
     if (!l.is_next(TokenType::CurlyOpen))
         return new CompStmt({parse_statement(l)});
 
-    expect(l, TokenType::CurlyOpen, true);
+    l.expect(TokenType::CurlyOpen, true);
 
     std::vector<Stmt *> stmts;
     while (!l.is_next(TokenType::CurlyClose)) {
@@ -118,13 +74,13 @@ CompStmt *parse_compound_stmt(Lexer &l) {
 
         stmts.push_back(parse_statement(l));
     }
-    expect(l, TokenType::CurlyClose, true);
+    l.expect(TokenType::CurlyClose, true);
 
     return new CompStmt(stmts);
 }
 
 static CompStmt *parse_jas_block(Lexer &l) {
-    expect(l, TokenType::CurlyOpen, true);
+    l.expect(TokenType::CurlyOpen, true);
 
     std::vector<Stmt *> stmts;
 
@@ -139,7 +95,7 @@ static CompStmt *parse_jas_block(Lexer &l) {
             stmts.push_back(parse_jas_stmt(l));
     }
 
-    expect(l, TokenType::CurlyClose, true);
+    l.expect(TokenType::CurlyClose, true);
     return new CompStmt(stmts);
 }
 
@@ -163,12 +119,12 @@ Function *parse_function(Lexer &l) {
     // function <name>(<ident_list>) jas { [<var_stmt> | <label> | <jas_stmt>]*
     // }
 
-    expect(l, TokenType::Keyword, "function", true); // function
+    l.expect(TokenType::Keyword, "function", true); // function
     std::string fname = parse_identifier(l);         // <name>
 
-    expect(l, TokenType::BracesOpen, true);                   // (
+    l.expect(TokenType::BracesOpen, true);                   // (
     std::vector<std::string> args = parse_identifier_list(l); // <ident_list>
-    expect(l, TokenType::BracesClose, true);                  // )
+    l.expect(TokenType::BracesClose, true);                  // )
 
     if (l.is_next(TokenType::Keyword, "jas")) {
         l.discard();
@@ -181,10 +137,10 @@ static Stmt *parse_magic_print(Lexer &l) {
     bool add_newline = l.is_next(TokenType::Keyword, "$puts");
     l.discard();
 
-    expect(l, TokenType::BracesOpen, true);
-    expect(l, TokenType::StringLiteral, false);
+    l.expect(TokenType::BracesOpen, true);
+    l.expect(TokenType::StringLiteral, false);
     std::string s = l.get().value;
-    expect(l, TokenType::BracesClose, true);
+    l.expect(TokenType::BracesClose, true);
 
     std::vector<Stmt *> stmts;
     for (const char &symbol : s) {
@@ -203,10 +159,10 @@ static Stmt *parse_magic_putc(Lexer &l) {
     std::vector<Stmt *> stmts;
 
     l.discard();
-    expect(l, TokenType::BracesOpen, true);
+    l.expect(TokenType::BracesOpen, true);
     stmts.push_back(parse_expr_stmt(l, false));
     stmts.push_back(new JasStmt("OUT"));
-    expect(l, TokenType::BracesClose, true);
+    l.expect(TokenType::BracesClose, true);
 
     return new CompStmt(stmts);
 }
@@ -215,8 +171,8 @@ static Stmt *parse_stop(Lexer &l) {
     Stmt *s =
         new JasStmt(l.is_next(TokenType::Keyword, "$err") ? "ERR" : "HALT");
     l.discard();
-    expect(l, TokenType::BracesOpen, true);
-    expect(l, TokenType::BracesClose, true);
+    l.expect(TokenType::BracesOpen, true);
+    l.expect(TokenType::BracesClose, true);
     return s;
 }
 
@@ -252,16 +208,16 @@ Stmt *parse_statement(Lexer &l) /* delegates to types of statements */
         s = parse_magic_putc(l);
     else if (l.is_next(TokenType::Keyword, "$push")) {
         l.discard();
-        expect(l, TokenType::BracesOpen, true);
+        l.expect(TokenType::BracesOpen, true);
         s = new ExprStmt(parse_expr(l), false);
-        expect(l, TokenType::BracesClose, true);
+        l.expect(TokenType::BracesClose, true);
     } else
         // if (!l.is_next(TokenType::Keyword))
         s = parse_expr_stmt(l, true);
     // else
     //     throw parse_error{l.peek(), "Expected a statement"};
 
-    expect(l, TokenType::SemiColon, true);
+    l.expect(TokenType::SemiColon, true);
     return s;
 }
 
@@ -272,7 +228,7 @@ Stmt *parse_expr_stmt(Lexer &l, bool pop) /* e.g. f(1, 2, 3);   */
 
 Stmt *parse_var_stmt(Lexer &l) /* e.g. var x = 2;    */
 {
-    expect(l, TokenType::Keyword, "var", true);
+    l.expect(TokenType::Keyword, "var", true);
     std::string name = parse_identifier(l);
 
     if (l.is_next(TokenType::Operator, "=")) {
@@ -284,7 +240,7 @@ Stmt *parse_var_stmt(Lexer &l) /* e.g. var x = 2;    */
 
 Stmt *parse_ret_stmt(Lexer &l) /* e.g. return x + x; */
 {
-    expect(l, TokenType::Keyword, "return", true);
+    l.expect(TokenType::Keyword, "return", true);
     return new RetStmt(parse_expr(l));
 }
 
@@ -294,25 +250,25 @@ Stmt *parse_for_stmt(Lexer &l) /* e.g. for (i = 0; i < 3; i += 1) stmt */
     Expr *condition = nullptr;
     Expr *update = nullptr;
 
-    expect(l, TokenType::Keyword, "for", true);
-    expect(l, TokenType::BracesOpen, true);
+    l.expect(TokenType::Keyword, "for", true);
+    l.expect(TokenType::BracesOpen, true);
 
     if (l.is_next(TokenType::Keyword, "var"))
         init = parse_var_stmt(l);
     else if (!l.is_next(TokenType::SemiColon))
         init = parse_expr_stmt(l);
 
-    expect(l, TokenType::SemiColon, true);
+    l.expect(TokenType::SemiColon, true);
 
     if (!l.is_next(TokenType::SemiColon))
         condition = parse_expr(l);
 
-    expect(l, TokenType::SemiColon, true);
+    l.expect(TokenType::SemiColon, true);
 
     if (!l.is_next(TokenType::BracesClose))
         update = parse_expr(l);
 
-    expect(l, TokenType::BracesClose, true);
+    l.expect(TokenType::BracesClose, true);
 
     return new ForStmt(init, condition, update, parse_compound_stmt(l));
 }
@@ -320,21 +276,21 @@ Stmt *parse_for_stmt(Lexer &l) /* e.g. for (i = 0; i < 3; i += 1) stmt */
 Stmt *parse_while_stmt(Lexer &l) {
     Expr *condition = nullptr;
 
-    expect(l, TokenType::Keyword, "while", true);
-    expect(l, TokenType::BracesOpen, true);
+    l.expect(TokenType::Keyword, "while", true);
+    l.expect(TokenType::BracesOpen, true);
     if (!l.is_next(TokenType::BracesClose)) {
         condition = parse_expr(l);
     }
-    expect(l, TokenType::BracesClose, true);
+    l.expect(TokenType::BracesClose, true);
     return new ForStmt(nullptr, condition, nullptr, parse_compound_stmt(l));
 }
 
 Stmt *parse_if_stmt(Lexer &l) /* e.g. if (x) stmt */
 {
-    expect(l, TokenType::Keyword, "if", true);
-    expect(l, TokenType::BracesOpen, true);
+    l.expect(TokenType::Keyword, "if", true);
+    l.expect(TokenType::BracesOpen, true);
     Expr *condition = parse_expr(l);
-    expect(l, TokenType::BracesClose, true);
+    l.expect(TokenType::BracesClose, true);
 
     CompStmt *thens, *elses;
 
@@ -352,7 +308,7 @@ Stmt *parse_if_stmt(Lexer &l) /* e.g. if (x) stmt */
 Stmt *parse_break_stmt(Lexer &l) /* e.g. break */
 {
     l.discard();
-    expect(l, TokenType::SemiColon, true);
+    l.expect(TokenType::SemiColon, true);
 
     return new BreakStmt;
 }
@@ -360,7 +316,7 @@ Stmt *parse_break_stmt(Lexer &l) /* e.g. break */
 Stmt *parse_continue_stmt(Lexer &l) /* e.g. continue */
 {
     l.discard();
-    expect(l, TokenType::SemiColon, true);
+    l.expect(TokenType::SemiColon, true);
 
     return new ContinueStmt;
 }
@@ -373,13 +329,13 @@ Stmt *parse_label_stmt(Lexer &l) /* e.g. label <name>: */
     std::string label_name = l.get().value;
 
     log.info("Label name %s", label_name.c_str());
-    expect(l, TokenType::Colon, true);
+    l.expect(TokenType::Colon, true);
     return new LabelStmt{label_name};
 }
 
 Stmt *parse_jas_stmt(Lexer &l) /* e.g. INVOKEVIRTUAL func */
 {
-    expect(l, TokenType::Identifier, false);
+    l.expect(TokenType::Identifier, false);
 
     Token tok = l.get();
     string op = tok.value;
@@ -506,24 +462,24 @@ Expr *parse_basic_expr(Lexer &l) /* e.g. a, 2, (1 + 3), f(1) */
 
     if (l.is_next(TokenType::Keyword, "$getc")) {
         l.discard();
-        expect(l, TokenType::BracesOpen, true);
-        expect(l, TokenType::BracesClose, true);
+        l.expect(TokenType::BracesOpen, true);
+        l.expect(TokenType::BracesClose, true);
         res = new StmtExpr(new JasStmt("IN"));
     } else if (l.is_next(TokenType::Keyword, "$push")) {
         l.discard();
-        expect(l, TokenType::BracesOpen, true);
+        l.expect(TokenType::BracesOpen, true);
         res = new StmtExpr(
             new CompStmt({parse_expr_stmt(l, false), new JasStmt("DUP")}));
-        expect(l, TokenType::BracesClose, true);
+        l.expect(TokenType::BracesClose, true);
     } else if (l.is_next(TokenType::Keyword, "$pop")) {
         l.discard();
-        expect(l, TokenType::BracesOpen, true);
-        expect(l, TokenType::BracesClose, true);
+        l.expect(TokenType::BracesOpen, true);
+        l.expect(TokenType::BracesClose, true);
         res = new StmtExpr(new CompStmt({}));
     } else if (l.is_next(TokenType::BracesOpen)) {
-        expect(l, TokenType::BracesOpen, true);
+        l.expect(TokenType::BracesOpen, true);
         res = parse_expr(l);
-        expect(l, TokenType::BracesClose, true);
+        l.expect(TokenType::BracesClose, true);
     } else if (numeric(l.peek()))
         res = new ValueExpr(parse_value(l, INT32_MIN, INT32_MAX));
     else if (l.is_next(TokenType::Identifier)) {
@@ -540,7 +496,7 @@ Expr *parse_basic_expr(Lexer &l) /* e.g. a, 2, (1 + 3), f(1) */
     while (l.is_next(TokenType::BlockOpen)) {
         l.discard();
         res = new ArrAccessExpr(res, parse_expr(l));
-        expect(l, TokenType::BlockClose, true);
+        l.expect(TokenType::BlockClose, true);
     }
 
     if (minus) {
@@ -555,25 +511,25 @@ Expr *parse_basic_expr(Lexer &l) /* e.g. a, 2, (1 + 3), f(1) */
 }
 
 Expr *parse_fcall(std::string name, Lexer &l) {
-    expect(l, TokenType::BracesOpen, true);
+    l.expect(TokenType::BracesOpen, true);
     std::vector<Expr *> args;
 
     if (l.peek().type != TokenType::BracesClose) {
         args.push_back(parse_expr(l));
 
         while (l.peek().type == TokenType::Comma) {
-            expect(l, TokenType::Comma, true);
+            l.expect(TokenType::Comma, true);
             args.push_back(parse_expr(l));
         }
     }
 
-    expect(l, TokenType::BracesClose, true);
+    l.expect(TokenType::BracesClose, true);
     return new FunExpr(name, args);
 }
 
 /* basic parts */
 std::string parse_identifier(Lexer &l) {
-    expect(l, TokenType::Identifier);
+    l.expect(TokenType::Identifier);
     return l.get().value;
 }
 
@@ -586,7 +542,7 @@ i32 parse_value(Lexer &l, long min, long max) {
         l.discard();
     }
 
-    expect(l, {TokenType::Decimal, TokenType::Hexadecimal,
+    l.expect({TokenType::Decimal, TokenType::Hexadecimal,
                TokenType::Character_literal});
     if (l.is_next(TokenType::Decimal) or l.is_next(TokenType::Hexadecimal)) {
         try {
