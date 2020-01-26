@@ -1,5 +1,5 @@
 CPPFLAGS_WARN=-Wall -Wextra -Werror -Wformat=2 -Wcast-qual -Wcast-align -Wwrite-strings -Wfloat-equal -Wpointer-arith -Wpedantic
-CPPFLAGS=-std=gnu++1y -g -O2 -fomit-frame-pointer -fno-builtin-log $(CPPFLAGS_WARN) -Ixbyak -Isrc
+CPPFLAGS=-std=gnu++1y -g -rdynamic -export-dynamic -O0 -fomit-frame-pointer -fno-builtin-log $(CPPFLAGS_WARN) -Ixbyak -Isrc
 #CPPFLAGS=-std=gnu++1y -s -Os -fomit-frame-pointer -fno-builtin-log $(CPPFLAGS_WARN) -Ixbyak
 
 SRCDIR=src
@@ -11,6 +11,9 @@ OBJ=$(patsubst $(SRCDIR)/%.cpp, $(OBJDIR)/%.o, $(SRC))
 DEP=$(OBJ:.o=.dep)
 
 .PHONY: asan msan format clean
+
+debug: CPPFLAGS += -DDEBUG
+debug: ij
 
 ij: $(OBJ)
 	$(CXX) $(CPPFLAGS) $^ -o $@ -m64 -lm -lstdc++
