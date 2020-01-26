@@ -88,8 +88,16 @@ class X64Assembler : public Assembler {
     virtual void NETCLOSE();
 
   private:
+  #ifdef DEBUG
+    void debug_call(u8 op);
+  #else
+    #define debug_call
+  #endif
+    void external_c_call(); /* inserts necessary bs for C call */
+
     Xbyak::CodeGenerator x64;
     const Xbyak::Reg64 &r_functions;
+    const Xbyak::Reg64 &r_safe;
 
     string fname;
     std::unordered_map<string, int> _fn_argc;

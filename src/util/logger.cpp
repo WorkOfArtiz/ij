@@ -1,3 +1,5 @@
+#include <execinfo.h>
+#include <unistd.h>
 #include "logger.hpp"
 #include <stdarg.h>
 #include <stdio.h>
@@ -71,6 +73,16 @@ void Logger::panic(const char *fmt, ...) {
     va_start(args, fmt);
     log(log_err, fmt, args);
     va_end(args);
+
+
+    void *array[10];
+    size_t size;
+
+    // get void*'s for all entries on the stack
+    size = backtrace(array, 10);
+
+    // print out all the frames to stderr
+    backtrace_symbols_fd(array, size, STDERR_FILENO);
     exit(1);
 }
 

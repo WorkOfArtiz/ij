@@ -149,7 +149,7 @@ void ValueExpr::compile(Program &, Assembler &a, id_gen &) const {
 
 void FunExpr::compile(Program &p, Assembler &a, id_gen &g) const {
     if (!a.is_constant("__OBJREF__"))
-        a.constant("__OBJREF__", 0xd000d000);
+        a.constant("__OBJREF__", 0x00d00d00);
     a.LDC_W("__OBJREF__");
 
     for (auto e : args)
@@ -290,13 +290,13 @@ void IfStmt::compile(Program &p, Assembler &a, id_gen &gen) const {
     }
 
     size_t if_id = gen.gif();
-    bool else_disabled = elses->empty();
+    bool else_enabled = !elses->empty();
 
     std::string if_start = sprint("if%d_condition", if_id);
     std::string if_then = sprint("if%d_then", if_id);
     // std::string if_else = sprint("if%d_else", if_id);
     std::string if_end = sprint("if%d_end", if_id);
-    std::string if_else = else_disabled ? if_end : sprint("if%d_else", if_id);
+    std::string if_else = else_enabled ? sprint("if%d_else", if_id) : if_end;
 
     a.label(if_start);
     if (OpExpr *con = dynamic_cast<OpExpr *>(condition)) {
@@ -316,16 +316,15 @@ void IfStmt::compile(Program &p, Assembler &a, id_gen &gen) const {
 
     // GOTO only needs to be added if there is
     // code to jump over
-    if (!else_disabled) {
-        if (!elses->is_terminal())
+    if (else_enabled) {
+        if (!thens->is_terminal()) {
             a.GOTO(if_end);
+        }
+
 
         a.label(if_else);
         elses->compile(p, a, gen);
     }
-    // ignore entire else branch
-    // else
-    //     a.label(if_else);
 
     a.label(if_end);
 }

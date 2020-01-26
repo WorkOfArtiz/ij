@@ -30,6 +30,7 @@ std::ostream &operator<<(std::ostream &o, const TokenType &t)
     case TokenType::CurlyOpen:         return o << "CurlyOpen";
     case TokenType::CurlyClose:        return o << "CurlyClose";
     case TokenType::Comma:             return o << "Comma";
+    case TokenType::Period:            return o << "Period";
     case TokenType::SemiColon:         return o << "SemiColon";
     case TokenType::Colon:             return o << "Colon";
     case TokenType::Nl:                return o << "Nl";
@@ -287,6 +288,7 @@ void Lexer::read_token() {
     case ':': t = TokenType::Colon; break;
     case ';': t = TokenType::SemiColon; break;
     case ',': t = TokenType::Comma; break;
+    case '.': t = TokenType::Period; break;
     case '{': t = TokenType::CurlyOpen; break;
     case '}': t = TokenType::CurlyClose; break;
     case '(': t = TokenType::BracesOpen; break;

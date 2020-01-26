@@ -2,6 +2,7 @@
 #define EC_PARSE
 #include "data.hpp"
 #include <frontends/common/lexer.hpp>
+#include <frontends/common/basic_parse.hpp> // parsing identifiers and integers
 #include <frontends/common/parse_error.hpp>
 
 /* High level functions */
@@ -31,9 +32,5 @@ Expr *parse_arit_expr(Lexer &l);    /* e.g. a + b, a - b */
 Expr *parse_mul_expr(Lexer &l);     /* e.g. a * b  */
 Expr *parse_basic_expr(Lexer &l);   /* e.g. a, 2, (1 + 3), f(1) */
 Expr *parse_fcall(std::string fname, Lexer &l);
-
-/* basic parts */
-std::string parse_identifier(Lexer &l);
-int32_t parse_value(Lexer &l, long min, long max);
 
 #endif

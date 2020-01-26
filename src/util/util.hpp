@@ -17,6 +17,14 @@ constexpr inline bool in(const T &value, std::initializer_list<S> options) {
     return false;
 }
 
+static inline bool endswith(const std::string &string, const std::string &ending)
+{
+    size_t slen = string.length();
+    size_t elen = ending.length();
+
+    return elen <= slen && std::string::npos != string.rfind(ending, slen - elen);
+}
+
 /* optimised contains, for containers with and without find */
 template <class C, class T>
 inline auto contains_impl(const C &c, const T &x, int)

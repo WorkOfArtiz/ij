@@ -36,6 +36,7 @@ enum class TokenType {
     CurlyOpen,
     CurlyClose,
     Comma,
+    Period,
     SemiColon,
     Colon,
     Nl,

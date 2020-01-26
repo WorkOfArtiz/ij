@@ -4,6 +4,7 @@
 #include <memory>
 
 #include <frontends/ij/compile.hpp>
+#include <frontends/jas/compile.hpp>
 #include <backends/ijvm_assembler.hpp>
 #include <backends/jas_assembler.hpp>
 #include <backends/x64_assembler.hpp>
@@ -17,9 +18,9 @@ struct options {
                                   // if run -> file to replace stdout
                                   // else      file to write program to
     std::string fmt = "jas";      // only relevant for compile
-                             //   what is the output, options: {jas, jit, x64}
-    bool verbose = false; // whether verbose output is given
-    bool debug = false;   // whether debug output is given
+                                  //   what is the output, options: {jas, jit, x64}
+    bool verbose = false;         // whether verbose output is given
+    bool debug = false;           // whether debug output is given
 };
 
 static std::vector<std::string> args(int argc, char **argv) {
@@ -213,9 +214,14 @@ int main(int argc, char **argv) {
     Lexer l;
 
     try {
-        log.info("reading file %s", o.src_file.c_str());
         l.add_source(o.src_file);
-        ij_compile(l, *a);
+
+        if (endswith(o.src_file, ".jas"))
+            jas_compile(l, *a);
+        else if (endswith(o.src_file, ".ij"))
+            ij_compile(l, *a);
+        else
+            log.panic("Can't parse file with that extension!");
 
         if (o.run) {
             x64_run(o, *a);

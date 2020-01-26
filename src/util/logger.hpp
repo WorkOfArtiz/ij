@@ -60,6 +60,7 @@ class Logger {
     void panic(const char *fmt, ...);
 
     void set_log_level(LogLevel level);
+    inline const LogLevel &get_log_level() const { return _log_level; }
 
   private:
     void log(const LogLevelImpl &lvl, const char *fmt, va_list args);
