@@ -159,6 +159,15 @@ template <> i32 buffer::reader::read(Endian e) {
     return static_cast<i32>(this->read<u32>(e));
 }
 
+u8 *buffer::reader::read_raw(size_t size) {
+    u8 *buffer = (u8 *) malloc(size);
+
+    for (size_t i = 0; i < size; i++)
+        buffer[i] = _b[_pos++];
+
+    return buffer;
+}
+
 /*******************************************************************************
  * Buffer class implementation
  ******************************************************************************/
@@ -170,11 +179,22 @@ buffer::buffer(unsigned capacity) : _capacity{capacity}, _size{0} {
 }
 
 buffer::buffer(const buffer &b) {
-    std::cout << "I shouldn't have been called, damn it" << std::endl;
     _internal = static_cast<u8 *>(malloc(b._capacity));
     _size = b._size;
     _capacity = b._capacity;
     memcpy(_internal, b._internal, _size);
+}
+
+/* creates a slice */
+buffer::buffer(const buffer &b, size_t from, size_t to) {
+    if (b._size < to)
+        throw std::runtime_error{"Slice is bigger than buffer"};
+
+    _internal = static_cast<u8 *>(malloc(to - from));
+    _size = to - from;
+    _capacity = to - from;
+
+    memcpy(_internal, &b._internal[from], _size);
 }
 
 buffer::~buffer() {

@@ -10,6 +10,7 @@
 Program *parse_program(Lexer &l) {
     Program *res = new Program();
     std::set<std::string> constants{{"main"}};
+    std::set<std::string> imports;
 
     l.set_skip({TokenType::Whitespace, TokenType::Nl, TokenType::Comment});
     l.set_keywords({"constant", "function", "import","var",   "for",
@@ -24,7 +25,11 @@ Program *parse_program(Lexer &l) {
 
         if (t.value == "import") {
             l.discard();
-            l.add_source(l.get().value);
+            std::string fn = l.get().value;
+            if (imports.count(fn) == 0) {
+                imports.insert(fn);
+                l.add_source(fn);
+            }
         }
         else if (t.value == "constant") {
             Constant *c = parse_constant(l);

@@ -1,42 +1,6 @@
 #include "assembler.hpp"
 #include <util/buffer.hpp>
-
-// clang-format off
-/* opcodes */
-const u8 op_bipush         = 0x10;
-const u8 op_dup            = 0x59;
-const u8 op_err            = 0xFE;
-const u8 op_goto           = 0xA7;
-const u8 op_halt           = 0xFF;
-const u8 op_iadd           = 0x60;
-const u8 op_iand           = 0x7E;
-const u8 op_ifeq           = 0x99;
-const u8 op_iflt           = 0x9B;
-const u8 op_icmpeq         = 0x9F;
-const u8 op_iinc           = 0x84;
-const u8 op_iload          = 0x15;
-const u8 op_in             = 0xFC;
-const u8 op_invokevirtual  = 0xB6;
-const u8 op_ior            = 0xB0;
-const u8 op_ireturn        = 0xAC;
-const u8 op_istore         = 0x36;
-const u8 op_isub           = 0x64;
-const u8 op_ldc_w          = 0x13;
-const u8 op_nop            = 0x00;
-const u8 op_out            = 0xFD;
-const u8 op_pop            = 0x57;
-const u8 op_swap           = 0x5F;
-const u8 op_wide           = 0xC4;
-const u8 op_newarray       = 0xD1;
-const u8 op_iaload         = 0xD2;
-const u8 op_iastore        = 0xD3;
-const u8 op_gc             = 0xD4;
-const u8 op_netbind        = 0xE1;
-const u8 op_netconnect     = 0xE2;
-const u8 op_netin          = 0xE3;
-const u8 op_netout         = 0xE4;
-const u8 op_netclose       = 0xE5;
-// clang-format on
+#include <util/opcodes.hpp>
 
 class IJVMAssembler : public Assembler {
   public:

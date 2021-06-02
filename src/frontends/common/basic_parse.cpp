@@ -36,6 +36,7 @@ i32 parse_value(Lexer &l, long min, long max) {
             // clang-format off
             switch (t.value[2]) {
             case '"':  res = '"';   break;
+            case '\'': res = '\'';  break;
             case '\\': res = '\\';  break;
             case '/':  res = '/';   break;
             case 'b':  res = '\b';  break;

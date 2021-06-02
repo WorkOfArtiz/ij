@@ -16,8 +16,8 @@
                                                         \
         external_c_call(); \
     }
-#else 
-#define DUMP_INSTRUCTION(op) 
+#else
+#define DUMP_INSTRUCTION(op)
 #endif
 
 
@@ -82,7 +82,7 @@ void __err__() {
 }
 
 uint64_t __newarray__(int64_t size) {
-    int64_t *arr = (int64_t *)calloc(size, sizeof(size));    
+    int64_t *arr = (int64_t *)calloc(size, sizeof(size));
     log.info(" -> newarray(%ld) -> %p", size, (void *)arr);
     return (uint64_t)arr;
 }
@@ -100,49 +100,49 @@ void __iastore__(int64_t *arr, int64_t index, int64_t value) {
 #ifdef DEBUG
 void debug(i64 op, i64 tos) {
     switch (op) {
-        case op_bipush:        log.info("bipush [tos:%llx]", tos);           break;                       
-        case op_dup:           log.info("dup [tos:%llx]", tos);              break;                    
-        case op_err:           log.info("err [tos:%llx]", tos);              break;                    
-        case op_goto:          log.info("goto [tos:%llx]", tos);             break;                     
-        case op_halt:          log.info("halt [tos:%llx]", tos);             break;                     
-        case op_iadd:          log.info("iadd [tos:%llx]", tos);             break;                     
-        case op_iand:          log.info("iand [tos:%llx]", tos);             break;                     
-        case op_ifeq:          log.info("ifeq [tos:%llx]", tos);             break;                     
-        case op_iflt:          log.info("iflt [tos:%llx]", tos);             break;                     
-        case op_icmpeq:        log.info("icmpeq [tos:%llx]", tos);           break;                       
-        case op_iinc:          log.info("iinc [tos:%llx]", tos);             break;                     
-        case op_iload:         log.info("iload [tos:%llx]", tos);            break;                      
-        case op_in:            log.info("in [tos:%llx]", tos);               break;                   
-        case op_invokevirtual: log.info("invokevirtual [tos:%llx]", tos);    break;                                 
-        case op_ior:           log.info("ior [tos:%llx]", tos);              break;                    
-        case op_ireturn:       log.info("ireturn [tos:%llx]", tos);          break;                        
-        case op_istore:        log.info("istore [tos:%llx]", tos);           break;                       
-        case op_isub:          log.info("isub [tos:%llx]", tos);             break;                     
-        case op_ldc_w:         log.info("ldc_w [tos:%llx]", tos);            break;                      
-        case op_nop:           log.info("nop [tos:%llx]", tos);              break;                    
-        case op_out:           log.info("out [tos:%llx]", tos);              break;                    
-        case op_pop:           log.info("pop [tos:%llx]", tos);              break;                    
-        case op_swap:          log.info("swap [tos:%llx]", tos);             break;                     
-        case op_wide:          log.info("wide [tos:%llx]", tos);             break;                     
-        case op_newarray:      log.info("newarray [tos:%llx]", tos);         break;                         
-        case op_iaload:        log.info("iaload [tos:%llx]", tos);           break;                       
-        case op_iastore:       log.info("iastore [tos:%llx]", tos);          break;                        
-        case op_gc:            log.info("gc [tos:%llx]", tos);               break;                   
-        case op_netbind:       log.info("netbind [tos:%llx]", tos);          break;                        
-        case op_netconnect:    log.info("netconnect [tos:%llx]", tos);       break;                           
-        case op_netin:         log.info("netin [tos:%llx]", tos);            break;                      
-        case op_netout:        log.info("netout [tos:%llx]", tos);           break;                       
-        case op_netclose:      log.info("netclose [tos:%llx]", tos);         break;                      
+        case op_bipush:        log.info("bipush [tos:%llx]", tos);           break;
+        case op_dup:           log.info("dup [tos:%llx]", tos);              break;
+        case op_err:           log.info("err [tos:%llx]", tos);              break;
+        case op_goto:          log.info("goto [tos:%llx]", tos);             break;
+        case op_halt:          log.info("halt [tos:%llx]", tos);             break;
+        case op_iadd:          log.info("iadd [tos:%llx]", tos);             break;
+        case op_iand:          log.info("iand [tos:%llx]", tos);             break;
+        case op_ifeq:          log.info("ifeq [tos:%llx]", tos);             break;
+        case op_iflt:          log.info("iflt [tos:%llx]", tos);             break;
+        case op_icmpeq:        log.info("icmpeq [tos:%llx]", tos);           break;
+        case op_iinc:          log.info("iinc [tos:%llx]", tos);             break;
+        case op_iload:         log.info("iload [tos:%llx]", tos);            break;
+        case op_in:            log.info("in [tos:%llx]", tos);               break;
+        case op_invokevirtual: log.info("invokevirtual [tos:%llx]", tos);    break;
+        case op_ior:           log.info("ior [tos:%llx]", tos);              break;
+        case op_ireturn:       log.info("ireturn [tos:%llx]", tos);          break;
+        case op_istore:        log.info("istore [tos:%llx]", tos);           break;
+        case op_isub:          log.info("isub [tos:%llx]", tos);             break;
+        case op_ldc_w:         log.info("ldc_w [tos:%llx]", tos);            break;
+        case op_nop:           log.info("nop [tos:%llx]", tos);              break;
+        case op_out:           log.info("out [tos:%llx]", tos);              break;
+        case op_pop:           log.info("pop [tos:%llx]", tos);              break;
+        case op_swap:          log.info("swap [tos:%llx]", tos);             break;
+        case op_wide:          log.info("wide [tos:%llx]", tos);             break;
+        case op_newarray:      log.info("newarray [tos:%llx]", tos);         break;
+        case op_iaload:        log.info("iaload [tos:%llx]", tos);           break;
+        case op_iastore:       log.info("iastore [tos:%llx]", tos);          break;
+        case op_gc:            log.info("gc [tos:%llx]", tos);               break;
+        case op_netbind:       log.info("netbind [tos:%llx]", tos);          break;
+        case op_netconnect:    log.info("netconnect [tos:%llx]", tos);       break;
+        case op_netin:         log.info("netin [tos:%llx]", tos);            break;
+        case op_netout:        log.info("netout [tos:%llx]", tos);           break;
+        case op_netclose:      log.info("netclose [tos:%llx]", tos);         break;
         default:
-            log.panic("incorrect op");                
+            log.panic("incorrect op");
     }
 }
 #endif
 
 X64Assembler::X64Assembler()
     : x64{4096 * 16, Xbyak::AutoGrow}, r_functions{x64.r14}, r_safe{x64.r15}, _io_added{false} {
-    
-    // if program becomes too long, the default relative jump would simply be too 
+
+    // if program becomes too long, the default relative jump would simply be too
     // short and compilation would fail
     x64.setDefaultJmpNEAR(true);
 
@@ -190,14 +190,14 @@ void X64Assembler::external_c_call() {
     x64.push(r_functions);
 
     // store old stack pointer in local variables and align stack
-    x64.mov(x64.ptr[x64.rbp + _local_variables["__rsp__"]], x64.rsp);
+    x64.mov(x64.ptr[x64.rbp - _local_variables["__rsp__"]], x64.rsp);
     x64.and_(x64.rsp, ~0xf);
 
     // do the actual call
     x64.call(x64.rax);
 
-    // restore rsp (mis)alignment    
-    x64.mov(x64.rsp, x64.ptr[x64.rbp + _local_variables["__rsp__"]]);
+    // restore rsp (mis)alignment
+    x64.mov(x64.rsp, x64.ptr[x64.rbp - _local_variables["__rsp__"]]);
 
     // restore func pointer
     x64.pop(r_functions);
@@ -236,7 +236,7 @@ void X64Assembler::function(string name, vector<string> args,
 
     _local_variables["__base_ptr__"] = (offset += 8);
     log.info("    [rbp - %2d] = __base_ptr__", offset);
-    
+
     // needed for rsp alignment
     _local_variables["__rsp__"] = (offset += 8);
     log.info("    [rbp - %2d] = __rsp__", offset);
@@ -253,14 +253,32 @@ void X64Assembler::function(string name, vector<string> args,
 
     log.info("; declare function");
     log.info("%s:", name.c_str());
-    x64.push(x64.rbp); // remember prev rbp
+    x64.push(x64.rbp);  // remember prev rbp
     log.info("    push rbp                  ; save previous rbp");
 
-    // we need to calculate rbp, which is
-    // rbp := rsp + [#args + 2] * (sizeof(register))
-    x64.lea(x64.rbp, x64.ptr[x64.rsp + (2 + args.size()) * 8]);
-    log.info("    lea rbp, [rsp + %3d]      ; calculate where rbp should go",
-             (2 + args.size()) * 8);
+    // Stack is now in following state
+    //
+    // for method         for main
+    // __obj_ref__           rip
+    //    arg1               rbp
+    //    arg2
+    //    rip
+    //    rbp
+
+    // we need to calculate the new rbp, which should start at the first argument
+    // it's important to note that __obj_ref__ is an implicit argument, and not in the argument list
+    // therefore
+
+    // if main, no arguments, just the rip+rbp
+    if (name == "main") {
+        log.info("    lea rbp, [rsp + %3d]      ; new rbp = rsp - size(rip+rbp)", 1 * 8);
+        x64.lea(x64.rbp, x64.ptr[x64.rsp + 1 * 8]);
+    }
+    // if method we should skip over rip+rbp+args+__obj_ref__
+    else {
+        log.info("    lea rbp, [rsp + %3d]      ; new rbp = rsp - size(rip+rbp+args)", (2+args.size()) * 8);
+        x64.lea(x64.rbp, x64.ptr[x64.rsp + (2 + args.size()) * 8]);
+    }
 
     // now we need to setup rsp, which means we need to reserve enough room for
     // all the lvars
@@ -320,7 +338,7 @@ void X64Assembler::IOR() {
 void X64Assembler::IADD() {
     log.info("    pop rax             ; IADD");
     DUMP_INSTRUCTION(op_iadd);
-    
+
     x64.pop(x64.rax);
     x64.pop(x64.rcx);
     x64.add(x64.ecx, x64.eax);
@@ -382,7 +400,7 @@ void X64Assembler::IINC(string var, int8_t value) {
     log.info("    add qword [rbp - %4d], %-2d; IINC %s %d",
              _local_variables[var], value, var.c_str(), value);
     DUMP_INSTRUCTION(op_iinc);
-    
+
     x64.add(x64.qword[x64.rbp - _local_variables[var]], value);
 }
 
@@ -404,7 +422,7 @@ void X64Assembler::ERR() {
     log.info("    mov rax, error         ; ERR");
     log.info("    call error");
     DUMP_INSTRUCTION(op_err);
-    
+
     x64.mov(x64.rax, x64.ptr[r_functions + r_function_error]);
     external_c_call();
 }
@@ -438,7 +456,7 @@ void X64Assembler::NOP() {
 void X64Assembler::GOTO(string label) {
     log.info("    jmp .%-20s ; GOTO %s", label.c_str(), label.c_str());
     DUMP_INSTRUCTION(op_goto);
-    
+
     x64.jmp(concat(fname, "#", label));
 }
 
@@ -485,7 +503,6 @@ void X64Assembler::INVOKEVIRTUAL(string func_name) {
 
     DUMP_INSTRUCTION(op_invokevirtual);
     x64.call(func_name);
-    x64.push(x64.rax);
 }
 
 void X64Assembler::IRETURN() {
@@ -503,8 +520,11 @@ void X64Assembler::IRETURN() {
     // load previous rip in rcx
     x64.mov(x64.rcx, x64.ptr[x64.rbp - _local_variables["__ret_addr__"]]);
 
-    // set top of stack to previous top of stack - args
+    // set top of stack to previous top of stack - args (excluding __obj_ref__)
     x64.mov(x64.rsp, x64.rbp);
+
+    // store the result in where __obj_ref__ used to be
+    x64.mov(x64.ptr[x64.rsp], x64.rax);
 
     // set base pointer to previous base pointer
     x64.mov(x64.rbp, x64.ptr[x64.rbp - _local_variables["__base_ptr__"]]);

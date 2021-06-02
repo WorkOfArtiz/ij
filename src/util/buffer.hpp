@@ -27,6 +27,7 @@ class buffer {
      **************************************************************************/
     buffer(unsigned capacity = 1024);
     buffer(const buffer &b); /* copy more easily */
+    buffer(const buffer &b, size_t from, size_t to); /* create a slice */
     ~buffer();
 
     void clear() { _size = 0; }             /* destroys contents */
@@ -89,6 +90,7 @@ class buffer {
 
     struct reader {
         reader(buffer &b) : _b{b}, _pos{0} {}
+        reader(const reader &r) : _b{r._b}, _pos{r._pos} {}
         ~reader() {}
 
         template <typename T> T read(Endian e = sys_endianess);
@@ -97,6 +99,7 @@ class buffer {
             return _pos + sizeof(T) < _b._size;
         }
 
+        u8 *read_raw(size_t size);
         void seek(u32 position) { _pos = position; }
         u32 position() { return _pos; }
 
