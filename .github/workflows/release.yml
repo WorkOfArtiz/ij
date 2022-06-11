@@ -1,0 +1,26 @@
+name: Release IJ binary
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@master
+        with:
+          fetch-depth: 1
+      - name: Run Makefile
+        env:
+          TOKEN: ${{ secrets.TOKEN }}
+        run: make ij
+      - name: Upload binaries to release
+      - uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: ij
+          asset_name: ij-x64
+          tag: ${{ github.ref }}
+          overwrite: true
+          body: "The latest x64 release"
