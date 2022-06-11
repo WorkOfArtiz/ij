@@ -41,8 +41,8 @@ jobs:
       uses: actions/upload-release-asset@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./ij
-          asset_name: ij-x86_64
-          asset_content_type: application/x-elf
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./ij
+        asset_name: ij-x86_64
+        asset_content_type: application/x-elf
