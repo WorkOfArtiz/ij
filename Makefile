@@ -10,7 +10,7 @@ SRC=$(shell find src -name '*.cpp')
 OBJ=$(patsubst $(SRCDIR)/%.cpp, $(OBJDIR)/%.o, $(SRC))
 DEP=$(OBJ:.o=.dep)
 
-.PHONY: asan msan format clean
+.PHONY: asan msan format clean debug ij
 
 debug: CPPFLAGS += -DDEBUG
 debug: ij
