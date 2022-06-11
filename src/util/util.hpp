@@ -22,7 +22,7 @@ static inline bool endswith(const std::string &string, const std::string &ending
     size_t slen = string.length();
     size_t elen = ending.length();
 
-    return elen <= slen && std::string::npos != string.rfind(ending, slen - elen);
+    return elen <= slen && (0 == string.compare(slen - elen, elen, ending));
 }
 
 /* optimised contains, for containers with and without find */

@@ -183,7 +183,7 @@ static void compile_to_file(options &o, Assembler &a) {
     if (o.output_file.empty()) {
         log.info("Writing to stdout");
         a.compile(std::cout);
-    } 
+    }
     else {
         log.info("Writing to file %s", o.output_file.c_str());
 
@@ -216,10 +216,16 @@ int main(int argc, char **argv) {
     try {
         l.add_source(o.src_file);
 
-        if (endswith(o.src_file, ".jas"))
+        if (endswith(o.src_file, ".jas")) {
+            log.info("Compiling src file %s as jas", o.src_file.c_str());
             jas_compile(l, *a);
-        else if (endswith(o.src_file, ".ij"))
+        }
+        else if (endswith(o.src_file, ".ij")) {
+            log.info("Compiling src file %s as ij", o.src_file.c_str());
             ij_compile(l, *a);
+        }
+        // else if (endswith(o.src_file, ".ijvm"))
+        //     ijvm_compile(l, *a);
         else
             log.panic("Can't parse file with that extension!");
 
@@ -232,5 +238,6 @@ int main(int argc, char **argv) {
     } catch (std::runtime_error &r) {
         log.panic("while compiling %s, %s", o.src_file.c_str(), r.what());
     }
+
     return 0;
 }

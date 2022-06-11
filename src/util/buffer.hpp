@@ -1,6 +1,7 @@
 #pragma once
 #include "types.h"
 #include "endian.hpp"
+#include <ostream>
 
 /*******************************************************************************
  * Abstraction over simple buffers:
