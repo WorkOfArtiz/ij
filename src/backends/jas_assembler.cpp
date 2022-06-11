@@ -111,3 +111,8 @@ void JASAssembler::NETCONNECT() { cs << "    NETCONNECT\n"; }
 void JASAssembler::NETIN() { cs << "    NETIN\n"; }
 void JASAssembler::NETOUT() { cs << "    NETOUT\n"; }
 void JASAssembler::NETCLOSE() { cs << "    NETCLOSE\n"; }
+
+void JASAssembler::SHL() { cs << "    SHL\n"; }
+void JASAssembler::SHR() { cs << "    SHR\n"; }
+void JASAssembler::IMUL() { cs << "    IMUL\n"; }
+void JASAssembler::IDIV() { cs << "    IDIV\n"; }

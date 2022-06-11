@@ -26,7 +26,7 @@ static void parse_optional_vars(Lexer &l, std::vector<std::string> &vars)
     if (l.is_next(TokenType::Period)) {
         l.discard();
         l.expect(TokenType::Keyword, "var", true);
-        
+
         while (l.is_next(TokenType::Identifier))
             vars.push_back(l.get().value);
 
@@ -41,7 +41,7 @@ static void parse_jas_op(Lexer &l, Assembler &a)
 {
     Token t = l.get();
     string val = t.value;
-    
+
     // clang-format off
          if (val == "BIPUSH")        a.BIPUSH(parse_value(l, I8_MIN, I8_MAX));
     else if (val == "DUP")           a.DUP();
@@ -75,6 +75,10 @@ static void parse_jas_op(Lexer &l, Assembler &a)
     else if (val == "NETIN")         a.NETIN();
     else if (val == "NETOUT")        a.NETOUT();
     else if (val == "NETCLOSE")      a.NETCLOSE();
+    else if (val == "SHL")           a.SHL();
+    else if (val == "SHR")           a.SHR();
+    else if (val == "IMUL")          a.IMUL();
+    else if (val == "IDIV")          a.IDIV();
     else if (val == "IINC") {
         std::string name = parse_identifier(l);
         a.IINC(name, parse_value(l, I8_MIN, I8_MAX));
@@ -141,14 +145,14 @@ static void parse_method(Lexer &l, Assembler &a)
         else
             parse_jas_op(l, a);
     }
-    
+
     l.expect(TokenType::Period, true);
     l.expect(TokenType::Keyword, "end", true);
     l.expect(TokenType::Operator, "-", true);
-    
+
     if (main)
         l.expect(TokenType::Keyword, "main", true);
-    else 
+    else
         l.expect(TokenType::Keyword, "method", true);
 
     log.success("Successfully parsed method %s", name.c_str());
@@ -167,7 +171,8 @@ void jas_compile(Lexer &l, Assembler &a)
         "OUT",           "POP",           "SWAP",          "WIDE",
         "IINC",          "NEWARRAY",      "IALOAD",        "IASTORE",
         "GC",            "NETBIND",       "NETCONNECT",    "NETIN",
-        "NETOUT",        "NETCLOSE"
+        "NETOUT",        "NETCLOSE",      "SHL",           "SHR",
+        "IMUL",          "IMUL"
     });
 
     while (l.has_token() && l.is_next(TokenType::Period)) {

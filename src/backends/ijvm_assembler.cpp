@@ -236,6 +236,15 @@ void IJVMAssembler::NETOUT() { code.append<u8>(op_netout); }
 
 void IJVMAssembler::NETCLOSE() { code.append<u8>(op_netclose); }
 
+void IJVMAssembler::SHL() { code.append<u8>(op_shl); }
+
+void IJVMAssembler::SHR() { code.append<u8>(op_shr); }
+
+void IJVMAssembler::IMUL() { code.append<u8>(op_imul); }
+
+void IJVMAssembler::IDIV() { code.append<u8>(op_idiv); }
+
+
 void IJVMAssembler::link(std::unordered_map<string, u32> findexes) {
     /* first compile the jump instructions */
     for (std::pair<u32, string> p : jmpaddrs) {

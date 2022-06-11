@@ -54,16 +54,25 @@ class IJVMAssembler : public Assembler {
     virtual void IRETURN();
 
     /* bonus extensions */
+
+    /* heap */
     virtual void NEWARRAY();
     virtual void IALOAD();
     virtual void IASTORE();
     virtual void GC();
 
+    /* network */
     virtual void NETBIND();
     virtual void NETCONNECT();
     virtual void NETIN();
     virtual void NETOUT();
     virtual void NETCLOSE();
+
+    /* arithmetic */
+    virtual void SHL();
+    virtual void SHR();
+    virtual void IMUL();
+    virtual void IDIV();
 
     /*
      * workhorse of the linking process

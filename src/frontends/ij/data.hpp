@@ -68,9 +68,19 @@ struct Expr {
     virtual void write(std::ostream &o) const = 0;
     virtual void compile(Program &p, Assembler &a, id_gen &gen) const = 0;
     virtual bool has_side_effects(Program &p) const; /* optional */
+    virtual void statements(std::vector<const Stmt *> &stmts) const;
+    virtual void expressions(std::vector<const Expr *> &expressions) const;
+
     virtual option<i32> val() const; /* returns the value, if const */
 };
+inline void Expr::statements(std::vector<const Stmt *> &) const {
+
+}
+inline void Expr::expressions(std::vector<const Expr *> &expressions) const {
+    expressions.push_back(this);
+}
 inline Expr::~Expr() {}
+
 
 struct OpExpr : Expr {
     inline OpExpr(std::string op, Expr *l, Expr *r)
@@ -79,6 +89,8 @@ struct OpExpr : Expr {
     virtual void write(std::ostream &o) const;
     virtual void compile(Program &p, Assembler &a, id_gen &gen) const;
     virtual bool has_side_effects(Program &p) const;
+    virtual void statements(std::vector<const Stmt *> &stmts) const;
+    virtual void expressions(std::vector<const Expr *> &expressions) const;
     virtual option<i32> val() const; /* returns the value, if const */
 
     bool is_comparison() const;
@@ -116,6 +128,8 @@ struct FunExpr : Expr {
 
     virtual void write(std::ostream &o) const;
     virtual void compile(Program &p, Assembler &a, id_gen &gen) const;
+    virtual void statements(std::vector<const Stmt *> &stmts) const;
+    virtual void expressions(std::vector<const Expr *> &expressions) const;
     virtual bool has_side_effects(Program &p) const;
 
     std::string fname;
@@ -129,6 +143,8 @@ struct StmtExpr : Expr {
     virtual void write(std::ostream &o) const;
     virtual void compile(Program &p, Assembler &a, id_gen &gen) const;
     virtual bool has_side_effects(Program &p) const;
+    virtual void statements(std::vector<const Stmt *> &stmts) const;
+    virtual void expressions(std::vector<const Expr *> &expressions) const;
 
     Stmt *stmt;
 };
@@ -144,6 +160,8 @@ struct ArrAccessExpr : Expr {
     virtual void write(std::ostream &o) const;
     virtual void compile(Program &p, Assembler &a, id_gen &g) const;
     virtual bool has_side_effects(Program &p) const;
+    virtual void statements(std::vector<const Stmt *> &stmts) const;
+    virtual void expressions(std::vector<const Expr *> &expressions) const;
 
     Expr *array;
     Expr *index;
@@ -153,9 +171,16 @@ struct Stmt {
     virtual void write(std::ostream &o) const = 0;
     virtual void compile(Program &p, Assembler &a, id_gen &gen) const = 0;
     virtual void find_vars(std::vector<std::string> &vec) const;
+    virtual void expressions(std::vector<const Expr *> &expressions) const;
+    virtual void statements(std::vector<const Stmt *> &stmts) const;
+
     virtual ~Stmt() = 0;
 };
 inline Stmt::~Stmt() {}
+void inline Stmt::statements(std::vector<const Stmt *> &stmts) const {
+    stmts.push_back(this);
+}
+void inline Stmt::expressions(std::vector<const Expr *> &) const {}
 
 struct CompStmt : Stmt {
     inline CompStmt(std::vector<Stmt *> stmts) : stmts{std::move(stmts)} {}
@@ -170,6 +195,8 @@ struct CompStmt : Stmt {
     virtual void write(std::ostream &o) const;
     virtual void compile(Program &p, Assembler &a, id_gen &gen) const;
     virtual void find_vars(std::vector<string> &vec) const;
+    virtual void expressions(std::vector<const Expr *> &expressions) const;
+    virtual void statements(std::vector<const Stmt *> &stmts) const;
 
     bool
     is_terminal() const; /* whether it contains a return, IRETURN, HALT, ERR */
@@ -185,6 +212,8 @@ struct VarStmt : Stmt {
     virtual void write(std::ostream &o) const;
     virtual void compile(Program &p, Assembler &a, id_gen &gen) const;
     virtual void find_vars(std::vector<std::string> &vec) const;
+    virtual void expressions(std::vector<const Expr *> &expressions) const;
+    virtual void statements(std::vector<const Stmt *> &stmts) const;
 
     std::string identifier;
     Expr *expr;
@@ -196,6 +225,8 @@ struct RetStmt : Stmt {
 
     virtual void write(std::ostream &o) const;
     virtual void compile(Program &p, Assembler &a, id_gen &gen) const;
+    virtual void statements(std::vector<const Stmt *> &stmts) const;
+    virtual void expressions(std::vector<const Expr *> &expressions) const;
 
     Expr *expr;
 };
@@ -206,6 +237,8 @@ struct ExprStmt : Stmt {
 
     virtual void write(std::ostream &o) const;
     virtual void compile(Program &p, Assembler &a, id_gen &gen) const;
+    virtual void statements(std::vector<const Stmt *> &stmts) const;
+    virtual void expressions(std::vector<const Expr *> &expressions) const;
 
     Expr *expr;
     bool pop;
@@ -219,6 +252,8 @@ struct ForStmt : Stmt {
     virtual void write(std::ostream &o) const;
     virtual void compile(Program &p, Assembler &a, id_gen &gen) const;
     virtual void find_vars(std::vector<std::string> &vec) const;
+    virtual void expressions(std::vector<const Expr *> &expressions) const;
+    virtual void statements(std::vector<const Stmt *> &stmts) const;
 
     Stmt *initial;
     Expr *condition;
@@ -234,6 +269,8 @@ struct IfStmt : Stmt {
     virtual void write(std::ostream &o) const;
     virtual void compile(Program &p, Assembler &a, id_gen &gen) const;
     virtual void find_vars(std::vector<std::string> &vec) const;
+    virtual void expressions(std::vector<const Expr *> &expressions) const;
+    virtual void statements(std::vector<const Stmt *> &stmts) const;
 
     Expr *condition;
     CompStmt *thens;
@@ -250,7 +287,8 @@ enum class JasType
     ISTORE,    ISUB,          LDC_W,   NOP,
     OUT,       POP,           SWAP,    WIDE,
     NEWARRAY,  IALOAD,        IASTORE, NETBIND,
-    NETCONNECT,NETIN,         NETOUT,  NETCLOSE
+    NETCONNECT,NETIN,         NETOUT,  NETCLOSE,
+    SHL,       SHR,           IMUL,    IDIV
 };
 // clang-format on
 
@@ -337,6 +375,7 @@ struct Function {
 
     std::vector<std::string> get_vars() const;
     void compile(Program &p, Assembler &a) const;
+    bool has_var(std::string name) const;
 
     std::string name;
     std::vector<std::string> args;
@@ -358,5 +397,9 @@ struct Program {
     std::vector<Constant *> consts;
 
     void compile(Assembler &a) const;
+    option<const Function *> get_function(std::string name) const;
+    option<const Constant *> get_const(std::string name) const;
+
+    void remove_function(Function *funcs);
 };
 #endif

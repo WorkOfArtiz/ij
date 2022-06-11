@@ -101,7 +101,7 @@ void FunExpr::write(std::ostream &o) const {
             o << ", ";
     }
 
-    o << ")";
+    o << "))";
 }
 
 void StmtExpr::write(std::ostream &o) const {
@@ -246,6 +246,118 @@ void IfStmt::find_vars(std::vector<std::string> &vec) const {
     elses->find_vars(vec);
 }
 
+/* overview for analysis methods */
+void CompStmt::statements(std::vector<const Stmt *> &stmts) const {
+    stmts.push_back(this);
+    for (Stmt *stmt : this->stmts)
+        stmt->statements(stmts);
+}
+void CompStmt::expressions(std::vector<const Expr *> &expr) const {
+    for (Stmt *stmt : this->stmts)
+        stmt->expressions(expr);
+}
+
+void VarStmt::statements(std::vector<const Stmt *> &stmts) const {
+    stmts.push_back(this);
+    this->expr->statements(stmts);
+}
+void VarStmt::expressions(std::vector<const Expr *> &expr) const {
+    this->expr->expressions(expr);
+}
+
+void RetStmt::statements(std::vector<const Stmt *> &stmts) const {
+    stmts.push_back(this);
+    this->expr->statements(stmts);
+}
+void RetStmt::expressions(std::vector<const Expr *> &expr) const {
+    this->expr->expressions(expr);
+}
+
+void ExprStmt::statements(std::vector<const Stmt *> &stmts) const {
+    stmts.push_back(this);
+    this->expr->statements(stmts);
+}
+void ExprStmt::expressions(std::vector<const Expr *> &expr) const {
+    this->expr->expressions(expr);
+}
+
+void ForStmt::statements(std::vector<const Stmt *> &stmts) const {
+    stmts.push_back(this);
+
+    if (this->initial)
+        this->initial->statements(stmts);
+
+    if (this->condition)
+        this->condition->statements(stmts);
+
+    if (this->update)
+        this->update->statements(stmts);
+
+    if (this->body)
+        this->body->statements(stmts);
+}
+void ForStmt::expressions(std::vector<const Expr *> &expr) const {
+    if (this->initial)
+        this->initial->expressions(expr);
+
+    if (this->condition)
+        this->condition->expressions(expr);
+
+    if (this->update)
+        this->update->expressions(expr);
+
+    if (this->body)
+        this->body->expressions(expr);
+}
+
+void IfStmt::statements(std::vector<const Stmt *> &stmts) const {
+    stmts.push_back(this);
+    this->thens->statements(stmts);
+    this->elses->statements(stmts);
+}
+void IfStmt::expressions(std::vector<const Expr *> &expr) const {
+    this->condition->expressions(expr);
+    this->thens->expressions(expr);
+    this->elses->expressions(expr);
+}
+
+void OpExpr::statements(std::vector<const Stmt *> &stmts) const {
+    this->left->statements(stmts);
+    this->right->statements(stmts);
+}
+void OpExpr::expressions(std::vector<const Expr *> &expr) const {
+    expr.push_back(this);
+    left->expressions(expr);
+    right->expressions(expr);
+}
+
+void FunExpr::statements(std::vector<const Stmt *> &stmts) const {
+    for (Expr *arg : this->args)
+        arg->statements(stmts);
+}
+void FunExpr::expressions(std::vector<const Expr *> &expr) const {
+    expr.push_back(this);
+    for (Expr *arg : this->args)
+        arg->expressions(expr);
+}
+
+void StmtExpr::statements(std::vector<const Stmt *> &stmts) const {
+    this->stmt->statements(stmts);
+}
+void StmtExpr::expressions(std::vector<const Expr *> &expr) const {
+    expr.push_back(this);
+    this->stmt->expressions(expr);
+}
+void ArrAccessExpr::statements(std::vector<const Stmt *> &stmts) const {
+    this->array->statements(stmts);
+    this->index->statements(stmts);
+}
+void ArrAccessExpr::expressions(std::vector<const Expr *> &expr) const {
+    expr.push_back(this);
+    this->array->expressions(expr);
+    this->index->expressions(expr);
+}
+
 // clang-format off
 const std::unordered_map<string, JasType> jas_type_mapping =
 {
@@ -265,7 +377,9 @@ const std::unordered_map<string, JasType> jas_type_mapping =
     {"IALOAD",        JasType::IALOAD},        {"IASTORE",       JasType::IASTORE},
     {"NETBIND",       JasType::NETBIND},       {"NETCONNECT",    JasType::NETCONNECT},
     {"NETIN",         JasType::NETIN},         {"NETOUT",        JasType::NETOUT},
-    {"NETCLOSE",      JasType::NETCLOSE},
+    {"NETCLOSE",      JasType::NETCLOSE},      {"SHL",           JasType::SHL},
+    {"SHR",           JasType::SHR},           {"IMUL",          JasType::IMUL},
+    {"IDIV",           JasType::IDIV}
 };
 // clang-format on
 bool CompStmt::is_terminal() const {
@@ -314,4 +428,36 @@ bool OpExpr::leaves_on_stack() const {
         return op.size() == 1;
     }
     return false;
+}
+
+
+/* Program utility functions */
+option<const Function *> Program::get_function(std::string name) const {
+    for (Function *f : this->funcs) {
+        if (f->name == name) {
+            return option<const Function *>{f};
+        }
+    }
+
+    return option<const Function *>();
+}
+
+option<const Constant *> Program::get_const(std::string name) const {
+    for (Constant *c : this->consts) {
+        if (c->name == name) {
+            return option<const Constant *>{c};
+        }
+    }
+
+    return option<const Constant *>();
+}
+
+std::vector<string> Function::get_vars() const {
+    std::vector<string> result;
+    this->stmts->find_vars(result);
+    return result;
+}
+
+bool Function::has_var(std::string s) const {
+    return contains(this->get_vars(), s);
 }

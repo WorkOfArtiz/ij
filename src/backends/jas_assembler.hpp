@@ -67,6 +67,11 @@ class JASAssembler : public Assembler {
     virtual void NETOUT();
     virtual void NETCLOSE();
 
+    /* arithmetic */
+    virtual void SHL();
+    virtual void SHR();
+    virtual void IMUL();
+    virtual void IDIV();
   private:
     std::stringstream cs;
     std::set<string> accessible_vars;

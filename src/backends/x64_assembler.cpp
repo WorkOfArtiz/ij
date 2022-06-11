@@ -599,3 +599,49 @@ void X64Assembler::NETOUT() {
 void X64Assembler::NETCLOSE() {
     throw std::runtime_error{"Not implemented: NETCLOSE"};
 }
+
+void X64Assembler::SHL() {
+    log.info("    pop rdi                   ; SHL");
+    log.info("    shl rdi, 1");
+    log.info("    push rdi");
+
+    x64.pop(x64.rdi);
+    x64.shl(x64.rdi, 1);
+    x64.push(x64.rdi);
+}
+
+void X64Assembler::SHR() {
+    log.info("    pop rdi                   ; SHL");
+    log.info("    shr rdi, 1");
+    log.info("    push rdi");
+
+    x64.pop(x64.rdi);
+    x64.shr(x64.rdi, 1);
+    x64.push(x64.rdi);
+}
+
+void X64Assembler::IDIV() {
+    log.info("    pop rdi                   ; IDIV");
+    log.info("    xor rdx, rdx");
+    log.info("    pop rax");
+    log.info("    idiv rdi");
+    log.info("    push rax");
+
+    x64.pop(x64.rdi);
+    x64.xor_(x64.rdx, x64.rdx);
+    x64.pop(x64.rax);
+    x64.idiv(x64.rdi);
+    x64.push(x64.rax);
+}
+
+void X64Assembler::IMUL() {
+    log.info("    pop rdi                   ; IMUL");
+    log.info("    pop rax");
+    log.info("    imul rax, rdi");
+    log.info("    push rax");
+
+    x64.pop(x64.rdi);
+    x64.pop(x64.rax);
+    x64.imul(x64.rax, x64.rdi);
+    x64.push(x64.rax);
+}

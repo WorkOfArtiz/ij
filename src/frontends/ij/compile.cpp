@@ -1,6 +1,7 @@
 #include "compile.hpp"
 #include "data.hpp"
 #include <memory>
+#include <vector>
 #include <util/util.hpp>
 
 /*
@@ -17,9 +18,114 @@ static void add_main(Program &p) {
     p.funcs.insert(p.funcs.begin(), f);
 }
 
+static void prune(Program &p) {
+    std::set<std::string> reachable_funcs;
+    std::set<std::string> reachable_consts;
+
+    std::vector<const Function *> todo{p.funcs[0]};
+    std::vector<const Expr *> exprs{};
+    std::vector<const Stmt *> stmts{};
+
+    while (!todo.empty()) {
+        const Function *f = todo.back();
+        if (contains(reachable_funcs, f->name)) {
+            todo.pop_back();
+            continue;
+        }
+
+        reachable_funcs.insert(f->name);
+        todo.pop_back();
+
+        f->stmts->statements(stmts);
+
+        for (const Stmt *s : stmts) {
+            // log.info(" - Statement: %s", cstr(*s));
+
+            if (const JasStmt *jas_stmt = dynamic_cast<const JasStmt *>(s)) {
+                if (jas_stmt->has_fun_arg()){
+                    std::string fname = jas_stmt->arg0;
+                    option<const Function *> f = p.get_function(fname);
+
+                    if (!f.isset()) {
+                        log.panic("Couldnt find function of name '%s' even though it was mentioned", fname.c_str());
+                    }
+
+                    todo.push_back(f);
+                }
+
+                if (jas_stmt->has_const_arg()) {
+                    reachable_consts.insert(jas_stmt->arg0);
+                }
+            }
+        }
+        stmts.clear();
+
+        f->stmts->expressions(exprs);
+
+        for (const Expr * e : exprs) {
+            if (const FunExpr *fun_expr = dynamic_cast<const FunExpr *>(e)) {
+                option<const Function *> f = p.get_function(fun_expr->fname);
+                if (!f.isset()) {
+                    log.panic("Couldnt find function of name '%s' even though it was mentioned in func call", fun_expr->fname.c_str());
+                }
+
+                const Function *function = f;
+                todo.push_back(function);
+            }
+
+            if (const IdentExpr *ident_expr = dynamic_cast<const IdentExpr *>(e)) {
+                if (!f->has_var(ident_expr->identifier)) {
+                    reachable_consts.insert(ident_expr->identifier);
+                }
+            }
+        }
+
+        exprs.clear();
+    }
+
+    for (std::string s : reachable_funcs) {
+        log.info(" > Function %s is reachable", s.c_str());
+    }
+
+    for (std::string s : reachable_consts) {
+        log.info(" > Constant %s is reachable", s.c_str());
+    }
+
+    auto func_it = p.funcs.begin();
+    while (func_it != p.funcs.end()) {
+        Function *f = *func_it;
+
+        if (!contains(reachable_funcs, f->name)) {
+            log.info(" > Function %s is not reachable ", f->name.c_str());
+            delete f;
+            p.funcs.erase(func_it);
+        }
+        else {
+            func_it++;
+        }
+    }
+
+    auto const_it = p.consts.begin();
+    while (const_it != p.consts.end()) {
+        Constant *c = *const_it;
+
+        if (!contains(reachable_consts, c->name)) {
+            log.info(" > Constant %s is not reachable ", c->name.c_str());
+            delete c;
+            p.consts.erase(const_it);
+        }
+        else {
+            const_it++;
+        }
+    }
+}
+
+
+
 void ij_compile(Lexer &l, Assembler &a) {
     std::unique_ptr<Program> p{parse_program(l)};
     add_main(*p);
+    prune(*p);
 
     log.info("constants %lu", p->consts.size());
     for (auto c : p->consts) {
@@ -126,8 +232,7 @@ void OpExpr::compile(Program &p, Assembler &a, id_gen &g) const {
             a.IMUL(val->value);
         } else {
             log.info("neither is constant");
-            throw std::runtime_error{
-                "multiplication only supported with constant"};
+            throw std::runtime_error{sprint("multiplication only supported with constant, expression: %s", str(*this))};
         }
     } else {
         throw std::runtime_error{"unsupported operator found: " + op};
@@ -370,6 +475,11 @@ void JasStmt::compile(Program &, Assembler &a, id_gen &) const
         case JasType::NETIN:         a.NETIN();              break;
         case JasType::NETOUT:        a.NETOUT();             break;
         case JasType::NETCLOSE:      a.NETCLOSE();           break;
+        case JasType::SHL:           a.SHL();                break;
+        case JasType::SHR:           a.SHR();                break;
+        case JasType::IMUL:          a.IMUL();               break;
+        case JasType::IDIV:          a.IDIV();               break;
+
     }
 }
 // clang-format on

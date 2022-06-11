@@ -36,11 +36,16 @@ const u8 op_netconnect     = 0xE2;
 const u8 op_netin          = 0xE3;
 const u8 op_netout         = 0xE4;
 const u8 op_netclose       = 0xE5;
+const u8 op_shl            = 0x70;
+const u8 op_shr            = 0x71;
+const u8 op_imul           = 0x72;
+const u8 op_idiv           = 0x73;
+
 // clang-format on
 
 // Better way of doing things
 // clang-format off
-enum class opcode : u8 
+enum class opcode : u8
 {
     BIPUSH         = 0x10,
     DUP            = 0x59,
@@ -76,6 +81,11 @@ enum class opcode : u8
     NETIN          = 0xE3,
     NETOUT         = 0xE4,
     NETCLOSE       = 0xE5,
+
+    SHL            = 0x70,
+    SHR            = 0x71,
+    IMUL           = 0x72,
+    IDIV           = 0x73,
 };
 // clang-format on
 

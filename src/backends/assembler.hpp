@@ -78,16 +78,25 @@ class Assembler {
     virtual void IRETURN() = 0;
 
     /* bonus extensions */
+
+    /* heap */
     virtual void NEWARRAY() = 0;
     virtual void IALOAD() = 0;
     virtual void IASTORE() = 0;
     virtual void GC() = 0;
 
+    /* network */
     virtual void NETBIND() = 0;
     virtual void NETCONNECT() = 0;
     virtual void NETIN() = 0;
     virtual void NETOUT() = 0;
     virtual void NETCLOSE() = 0;
+
+    /* arithmetic */
+    virtual void SHL() = 0;
+    virtual void SHR() = 0;
+    virtual void IMUL() = 0;
+    virtual void IDIV() = 0;
 
   protected:
     std::unordered_map<string, i32> constant_map;

@@ -87,6 +87,11 @@ class X64Assembler : public Assembler {
     virtual void NETOUT();
     virtual void NETCLOSE();
 
+    /* arithmetic */
+    virtual void SHL();
+    virtual void SHR();
+    virtual void IMUL();
+    virtual void IDIV();
   private:
   #ifdef DEBUG
     void debug_call(u8 op);
