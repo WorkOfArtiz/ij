@@ -23,7 +23,7 @@ void IJVMAssembler::compile(ostream &o) {
 
     link(findexes);
 
-    buffer output;
+    Buffer output;
 
     /* put magic word */
     output.append<u32>(0x1deadfad, e);
@@ -37,10 +37,10 @@ void IJVMAssembler::compile(ostream &o) {
     /* write text block */
     output.append<u32>(0x00000000, e);
     output.append<u32>(code.size(), e);
-    output.append<const buffer &>(code);
+    output.append<const Buffer &>(code);
 
     /* write function addresses (symbol tables) */
-    buffer symbol;
+    Buffer symbol;
     for (std::pair<string, u32> p : faddrs) {
         symbol.append<u32>(p.second, e);
         symbol.append<const char *>(p.first.c_str(), e);
@@ -50,7 +50,7 @@ void IJVMAssembler::compile(ostream &o) {
     /* write function symbols */
     output.append<u32>(0xEEeeEEee, e);
     output.append<u32>(symbol.size(), e);
-    output.append<const buffer &>(symbol);
+    output.append<const Buffer &>(symbol);
 
     symbol.clear(); /* clear symbols */
 
@@ -63,7 +63,7 @@ void IJVMAssembler::compile(ostream &o) {
     /* write label symbols */
     output.append<u32>(0xFFffFFff, e);
     output.append<u32>(symbol.size(), e);
-    output.append<const buffer &>(symbol);
+    output.append<const Buffer &>(symbol);
 
     o << output;
 }

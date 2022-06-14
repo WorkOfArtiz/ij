@@ -19,30 +19,28 @@
  *    return b;
  * }
  ******************************************************************************/
-class buffer {
-    friend class buffer_reader;
-
+class Buffer {
   public:
     /***************************************************************************
      * Basic interface
      **************************************************************************/
-    buffer(unsigned capacity = 1024);
-    buffer(const buffer &b); /* copy more easily */
-    buffer(const buffer &b, size_t from, size_t to); /* create a slice */
-    ~buffer();
+    Buffer(unsigned capacity = 1024);
+    Buffer(const Buffer &b); /* copy more easily */
+    Buffer(const Buffer &b, size_t from, size_t to); /* create a slice */
+    ~Buffer();
 
     void clear() { _size = 0; }             /* destroys contents */
     unsigned size() const { return _size; } /* returns size */
 
     /* overloaded operators */
-    void operator=(buffer &&b);                 /* pass around more easily */
+    void operator=(Buffer &&b);                 /* pass around more easily */
     const u8 &operator[](unsigned index) const; /* access elements easily */
 
     /* append more easily */
     void raw_append(const u8 *raw, unsigned size);
 
     /* gives string escaped view of buffer */
-    buffer escape();
+    Buffer escape();
 
     // These are implicit through the template append function
     // void append(char c);
@@ -65,7 +63,7 @@ class buffer {
     /* making buffers simple to iterate over as byte arrays */
     struct iter : public std::iterator<std::input_iterator_tag, u8> {
         iter(const iter &original) : _buf{original._buf}, _i{original._i} {}
-        iter(const buffer &b, int index) : _buf{b}, _i{index} {}
+        iter(const Buffer &b, int index) : _buf{b}, _i{index} {}
 
         u8 operator*() const { return _buf[_i]; }
         const iter &operator++() {
@@ -82,17 +80,17 @@ class buffer {
         bool operator!=(const iter &o) const { return _i != o._i; }
 
       private:
-        const buffer &_buf;
+        const Buffer &_buf;
         int _i;
     };
 
-    buffer::iter begin() const { return buffer::iter(*this, 0); }
-    buffer::iter end() const { return buffer::iter(*this, size()); }
+    Buffer::iter begin() const { return Buffer::iter(*this, 0); }
+    Buffer::iter end() const { return Buffer::iter(*this, size()); }
 
-    struct reader {
-        reader(buffer &b) : _b{b}, _pos{0} {}
-        reader(const reader &r) : _b{r._b}, _pos{r._pos} {}
-        ~reader() {}
+    struct Reader {
+        Reader(Buffer &b) : _b{b}, _pos{0} {}
+        Reader(const Reader &r) : _b{r._b}, _pos{r._pos} {}
+        ~Reader() {}
 
         template <typename T> T read(Endian e = sys_endianess);
 
@@ -105,16 +103,16 @@ class buffer {
         u32 position() { return _pos; }
 
       private:
-        const buffer &_b;
+        const Buffer &_b;
         u32 _pos;
     };
 
-    buffer::reader readinator() { return buffer::reader(*this); }
+    Buffer::Reader readinator() { return Buffer::Reader(*this); }
 
     /* map in file in buffer, clears buffer beforehand */
     void map_file(const char *file);
 
-    friend std::ostream &operator<<(std::ostream &out, const buffer &b) {
+    friend std::ostream &operator<<(std::ostream &out, const Buffer &b) {
         std::string s{reinterpret_cast<const char *>(b._internal), b._size};
         out << s;
         // out.write(b._internal, b._size);

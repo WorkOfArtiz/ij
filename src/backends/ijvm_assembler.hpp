@@ -80,7 +80,7 @@ class IJVMAssembler : public Assembler {
     void link(std::unordered_map<string, u32> findexes);
 
   private:
-    buffer code;                            /* raw compiled text section */
+    Buffer code;                            /* raw compiled text section */
     std::unordered_map<string, u32> laddrs; /* label -> offset in buffer */
     std::unordered_map<u32, string>
         jmpaddrs; /* JMP[1 byte op] label addresses */

@@ -9,63 +9,63 @@
  * Implementations of the append(type), since they're used in functions
  * below they have to be declared earlier
  ******************************************************************************/
-template <> void buffer::append<char>(char c, Endian) {
+template <> void Buffer::append<char>(char c, Endian) {
     raw_append(reinterpret_cast<u8 *>(&c), sizeof(char));
 }
 
-template <> void buffer::append<const char *>(const char *c, Endian) {
+template <> void Buffer::append<const char *>(const char *c, Endian) {
     raw_append(reinterpret_cast<const u8 *>(c), strlen(c));
 }
 
-template <> void buffer::append<const buffer &>(const buffer &b, Endian) {
+template <> void Buffer::append<const Buffer &>(const Buffer &b, Endian) {
     raw_append(b._internal, b._size);
 }
 
-template <> void buffer::append<u8>(u8 v, Endian) {
+template <> void Buffer::append<u8>(u8 v, Endian) {
     raw_append(&v, sizeof(u8));
 }
 
-template <> void buffer::append<i8>(i8 v, Endian) {
+template <> void Buffer::append<i8>(i8 v, Endian) {
     raw_append(reinterpret_cast<u8 *>(&v), sizeof(i8));
 }
 
-template <> void buffer::append<u16>(u16 v, Endian e) {
+template <> void Buffer::append<u16>(u16 v, Endian e) {
     if (e != sys_endianess)
         v = swap_endianess(v);
 
-    buffer::raw_append(reinterpret_cast<u8 *>(&v), sizeof(u16));
+    Buffer::raw_append(reinterpret_cast<u8 *>(&v), sizeof(u16));
 }
 
-template <> void buffer::append<i16>(i16 v, Endian e) {
+template <> void Buffer::append<i16>(i16 v, Endian e) {
     append(static_cast<u16>(v), e);
 }
 
-template <> void buffer::append<u32>(u32 v, Endian e) {
+template <> void Buffer::append<u32>(u32 v, Endian e) {
     if (e != sys_endianess)
         v = swap_endianess(v);
 
-    buffer::raw_append(reinterpret_cast<u8 *>(&v), sizeof(u32));
+    Buffer::raw_append(reinterpret_cast<u8 *>(&v), sizeof(u32));
 }
 
-template <> void buffer::append<i32>(i32 v, Endian e) {
+template <> void Buffer::append<i32>(i32 v, Endian e) {
     append(static_cast<u32>(v), e);
 }
 
 /*
  * Write implementations
  */
-template <> void buffer::write<u8>(u8 c, u32 offset, Endian) {
+template <> void Buffer::write<u8>(u8 c, u32 offset, Endian) {
     if (offset < _size)
         throw std::runtime_error{"Out of bounds"};
 
     _internal[offset] = c;
 }
 
-template <> void buffer::write<i8>(i8 c, u32 offset, Endian e) {
+template <> void Buffer::write<i8>(i8 c, u32 offset, Endian e) {
     write<u8>(*reinterpret_cast<u8 *>(&c), offset, e);
 }
 
-template <> void buffer::write<u16>(u16 v, u32 offset, Endian e) {
+template <> void Buffer::write<u16>(u16 v, u32 offset, Endian e) {
     union {
         u16 value;
         u8 bytes[sizeof(u16)];
@@ -83,11 +83,11 @@ template <> void buffer::write<u16>(u16 v, u32 offset, Endian e) {
     _internal[offset + 1] = value_bytes.bytes[1];
 }
 
-template <> void buffer::write<i16>(i16 v, u32 offset, Endian e) {
+template <> void Buffer::write<i16>(i16 v, u32 offset, Endian e) {
     write(static_cast<u16>(v), offset, e);
 }
 
-template <> void buffer::write<u32>(u32 v, u32 offset, Endian e) {
+template <> void Buffer::write<u32>(u32 v, u32 offset, Endian e) {
     union {
         u32 value;
         u8 bytes[sizeof(u32)];
@@ -107,25 +107,25 @@ template <> void buffer::write<u32>(u32 v, u32 offset, Endian e) {
     _internal[offset + 3] = value_bytes.bytes[3];
 }
 
-template <> void buffer::write<i32>(i32 v, u32 offset, Endian e) {
+template <> void Buffer::write<i32>(i32 v, u32 offset, Endian e) {
     write(static_cast<u32>(v), offset, e);
 }
 
 /*******************************************************************************
- * buffer::reader::read implementations
+ * Buffer::Reader::read implementations
  ******************************************************************************/
-template <> u8 buffer::reader::read<u8>(Endian) {
+template <> u8 Buffer::Reader::read<u8>(Endian) {
     if (_pos >= _b._size)
-        throw std::runtime_error{"buffer overflow in reader"};
+        throw std::runtime_error{"Buffer overflow in reader"};
 
     return _b[_pos++];
 }
 
-template <> i8 buffer::reader::read<i8>(Endian e) {
+template <> i8 Buffer::Reader::read<i8>(Endian e) {
     return static_cast<i8>(this->read<u8>(e));
 }
 
-template <> u16 buffer::reader::read(Endian e) {
+template <> u16 Buffer::Reader::read(Endian e) {
     if (_pos + 1 >= _b._size)
         throw std::runtime_error{"tried to read past end of buffer"};
 
@@ -138,11 +138,11 @@ template <> u16 buffer::reader::read(Endian e) {
     return x;
 }
 
-template <> i16 buffer::reader::read(Endian e) {
+template <> i16 Buffer::Reader::read(Endian e) {
     return static_cast<i16>(this->read<u16>(e));
 }
 
-template <> u32 buffer::reader::read(Endian e) {
+template <> u32 Buffer::Reader::read(Endian e) {
     if (_pos + 4 > _b._size)
         throw std::runtime_error{"tried to read past end of buffer"};
 
@@ -155,11 +155,11 @@ template <> u32 buffer::reader::read(Endian e) {
     return x;
 }
 
-template <> i32 buffer::reader::read(Endian e) {
+template <> i32 Buffer::Reader::read(Endian e) {
     return static_cast<i32>(this->read<u32>(e));
 }
 
-u8 *buffer::reader::read_raw(size_t size) {
+u8 *Buffer::Reader::read_raw(size_t size) {
     u8 *buffer = (u8 *) malloc(size);
 
     for (size_t i = 0; i < size; i++)
@@ -171,14 +171,14 @@ u8 *buffer::reader::read_raw(size_t size) {
 /*******************************************************************************
  * Buffer class implementation
  ******************************************************************************/
-buffer::buffer(unsigned capacity) : _capacity{capacity}, _size{0} {
+Buffer::Buffer(unsigned capacity) : _capacity{capacity}, _size{0} {
     _internal = reinterpret_cast<u8 *>(malloc(capacity));
 
     if (!_internal)
         throw std::bad_alloc();
 }
 
-buffer::buffer(const buffer &b) {
+Buffer::Buffer(const Buffer &b) {
     _internal = static_cast<u8 *>(malloc(b._capacity));
     _size = b._size;
     _capacity = b._capacity;
@@ -186,7 +186,7 @@ buffer::buffer(const buffer &b) {
 }
 
 /* creates a slice */
-buffer::buffer(const buffer &b, size_t from, size_t to) {
+Buffer::Buffer(const Buffer &b, size_t from, size_t to) {
     if (b._size < to)
         throw std::runtime_error{"Slice is bigger than buffer"};
 
@@ -197,12 +197,12 @@ buffer::buffer(const buffer &b, size_t from, size_t to) {
     memcpy(_internal, &b._internal[from], _size);
 }
 
-buffer::~buffer() {
+Buffer::~Buffer() {
     if (_internal != nullptr)
         free(_internal);
 }
 
-void buffer::operator=(buffer &&b) {
+void Buffer::operator=(Buffer &&b) {
     _internal = b._internal;
     _size = b._size;
     _capacity = b._capacity;
@@ -212,14 +212,14 @@ void buffer::operator=(buffer &&b) {
     b._capacity = 0;
 }
 
-const u8 &buffer::operator[](unsigned index) const {
+const u8 &Buffer::operator[](unsigned index) const {
     if (index >= size())
         throw std::runtime_error("Buffer overflow");
 
     return this->_internal[index];
 }
 
-void buffer::raw_append(const u8 *raw, unsigned size) {
+void Buffer::raw_append(const u8 *raw, unsigned size) {
     if (_size + size > _capacity)
         grow(_size + size);
 
@@ -231,8 +231,8 @@ void buffer::raw_append(const u8 *raw, unsigned size) {
     _size += size;
 }
 
-buffer buffer::escape() {
-    buffer escaped;
+Buffer Buffer::escape() {
+    Buffer escaped;
     auto hex = [](u8 i) -> char { return (i < 10) ? '0' + i : 'a' + i - 10; };
 
     for (u8 byte : *this) {
@@ -278,7 +278,7 @@ buffer buffer::escape() {
     return escaped;
 }
 
-void buffer::grow(unsigned new_size) {
+void Buffer::grow(unsigned new_size) {
     unsigned new_cap = _capacity;
 
     if (_capacity >= new_size)
@@ -297,7 +297,7 @@ void buffer::grow(unsigned new_size) {
     _capacity = new_cap;
 }
 
-void buffer::map_file(const char *file) {
+void Buffer::map_file(const char *file) {
     clear();
 
     FILE *input_file = fopen(file, "rb");
