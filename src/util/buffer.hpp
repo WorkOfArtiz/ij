@@ -95,7 +95,7 @@ class Buffer {
         template <typename T> T read(Endian e = sys_endianess);
 
         template <typename T> bool has_next() {
-            return _pos + sizeof(T) < _b._size;
+            return _pos + sizeof(T) <= _b._size;
         }
 
         u8 *read_raw(size_t size);
@@ -110,7 +110,7 @@ class Buffer {
     Buffer::Reader readinator() { return Buffer::Reader(*this); }
 
     /* map in file in buffer, clears buffer beforehand */
-    void map_file(const char *file);
+    void map_file(std::string filename);
 
     friend std::ostream &operator<<(std::ostream &out, const Buffer &b) {
         std::string s{reinterpret_cast<const char *>(b._internal), b._size};

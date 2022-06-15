@@ -297,18 +297,23 @@ void Buffer::grow(unsigned new_size) {
     _capacity = new_cap;
 }
 
-void Buffer::map_file(const char *file) {
+void Buffer::map_file(std::string filename) {
     clear();
 
-    FILE *input_file = fopen(file, "rb");
+    FILE *input_file = fopen(filename.c_str(), "rb");
     if (input_file == nullptr)
-        throw std::runtime_error{sprint("File '%s' doesn't exist", file)};
+        throw std::runtime_error{sprint("File '%s' doesn't exist or wasnt readable", filename.c_str())};
 
     u8 contents[1024];
     size_t bytes_read;
 
     while ((bytes_read = fread(contents, 1, 1024, input_file)) != 0) {
+        log.info("Reading chunk of %d", bytes_read);
         raw_append(contents, bytes_read);
     }
+
     fclose(input_file);
+
+    log.info("File %s, mapped in.", filename.c_str());
+    log.info("Buffer of size: %d", this->size());
 }

@@ -172,7 +172,7 @@ void jas_compile(Lexer &l, Assembler &a)
         "IINC",          "NEWARRAY",      "IALOAD",        "IASTORE",
         "GC",            "NETBIND",       "NETCONNECT",    "NETIN",
         "NETOUT",        "NETCLOSE",      "SHL",           "SHR",
-        "IMUL",          "IMUL"
+        "IDIV",          "IMUL"
     });
 
     while (l.has_token() && l.is_next(TokenType::Period)) {

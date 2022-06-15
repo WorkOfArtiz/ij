@@ -1,10 +1,12 @@
 #ifndef UTIL_H
 #define UTIL_H
 #include <sstream>
+#include <iomanip>
 #include <string>
 #include <array>
 #include <vector>
 #include <algorithm>
+#include <type_traits>
 #include "logger.hpp"
 
 /* in function */
@@ -94,6 +96,22 @@ static inline void sprint_helper(std::stringstream &out, const char *fmt,
                                  ArgType arg, ArgTypes... args) {
     for (const char *s = fmt; *s; s++) {
         if (*s == '%' && *(++s) != '%') {
+            if (*s == '0') {
+                out << std::setfill('0');
+                s++;
+            }
+
+            if (*s >= '1' && *s <= '9') {
+                int padding = *s++ - '0';
+
+                while (*s >= '0' && *s <= '9') {
+                    padding = padding * 10 + (*s++ - '0');
+                }
+
+                out << std::setw(padding);
+            }
+
+
             switch (*s) {
             case 'd':
                 out << arg;
@@ -146,5 +164,14 @@ template <typename T> struct option {
 };
 
 bool in(std::string needle, std::initializer_list<std::string> hay);
+
+template<class t>
+static t pop(std::vector<t> &stack) {
+    static_assert(std::is_integral<t>::value, "Not implemented for arbitrary types");
+    t last = stack.back();
+    stack.pop_back();
+
+    return last;
+}
 
 #endif

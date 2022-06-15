@@ -16,7 +16,6 @@ void JASAssembler::compile(ostream &o) {
     if (!constant_order.empty())
         o << ".end-constant" << '\n' << '\n';
 
-    o << ".main\n";
     o << cs.str();
 
     if (_fn_declared)
@@ -29,27 +28,28 @@ void JASAssembler::compile(ostream &o) {
 
 // bool JASAssembler::is_constant(string name) { return consts.count(name) == 1;
 // }
-void JASAssembler::label(string name) { cs << name << ":\n"; }
-void JASAssembler::function(string name, vector<string> args,
-                            vector<string> vars) {
+void JASAssembler::label(string name) { cs << name << ":"; }
+void JASAssembler::function(string name, vector<string> args, vector<string> vars) {
     // Since the main 'function' is special, we skip it here
-    if (name == "main")
-        return;
-
-    if (_fn_declared)
-        cs << ".end-method\n\n";
+    if (name == "main") {
+        cs << ".main\n";
+    }
     else {
-        cs << ".end-main\n\n";
-        _fn_declared = true;
-    }
+        if (_fn_declared)
+            cs << ".end-method\n\n";
+        else {
+            cs << ".end-main\n\n";
+            _fn_declared = true;
+        }
 
-    cs << ".method " << name << "(";
-    for (size_t i = 0; i < args.size(); i++) {
-        cs << args[i];
-        if (i + 1 != args.size())
-            cs << ", ";
+        cs << ".method " << name << "(";
+        for (size_t i = 0; i < args.size(); i++) {
+            cs << args[i];
+            if (i + 1 != args.size())
+                cs << ", ";
+        }
+        cs << ")\n";
     }
-    cs << ")\n";
 
     if (!vars.empty()) {
         cs << ".var\n";

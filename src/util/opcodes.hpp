@@ -86,7 +86,54 @@ enum class opcode : u8
     SHR            = 0x71,
     IMUL           = 0x72,
     IDIV           = 0x73,
+
+    INVALID        = 0x80,
 };
 // clang-format on
+
+constexpr opcode opcode_parse(u8 i) {
+    switch(static_cast<opcode>(i)) {
+        case opcode::BIPUSH:
+        case opcode::DUP:
+        case opcode::ERR:
+        case opcode::GOTO:
+        case opcode::HALT:
+        case opcode::IADD:
+        case opcode::IAND:
+        case opcode::IFEQ:
+        case opcode::IFLT:
+        case opcode::ICMPEQ:
+        case opcode::IINC:
+        case opcode::ILOAD:
+        case opcode::IN:
+        case opcode::INVOKEVIRTUAL:
+        case opcode::IOR:
+        case opcode::IRETURN:
+        case opcode::ISTORE:
+        case opcode::ISUB:
+        case opcode::LDC_W:
+        case opcode::NOP:
+        case opcode::OUT:
+        case opcode::POP:
+        case opcode::SWAP:
+        case opcode::WIDE:
+        case opcode::NEWARRAY:
+        case opcode::IALOAD:
+        case opcode::IASTORE:
+        case opcode::GC:
+        case opcode::NETBIND:
+        case opcode::NETCONNECT:
+        case opcode::NETIN:
+        case opcode::NETOUT:
+        case opcode::NETCLOSE:
+        case opcode::SHL:
+        case opcode::SHR:
+        case opcode::IMUL:
+        case opcode::IDIV:
+            return static_cast<opcode>(i);
+        default:
+            return opcode::INVALID;
+    }
+}
 
 #endif

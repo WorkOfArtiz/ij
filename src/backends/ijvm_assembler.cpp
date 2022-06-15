@@ -76,18 +76,22 @@ void IJVMAssembler::label(string name) {
 
 void IJVMAssembler::function(string name, vector<string> args,
                              vector<string> vars) {
-    // Since the main 'function' is special, we skip it here
-    if (name == "main")
-        return;
+    // Since the main 'function' is special it needs a bit of extra attention
+    if (name != "main")
+        faddrs[name] = code.size();
 
-    // log.info("New function made: %s", name.c_str());
     current_func = name;
-    faddrs[name] = code.size();
-    code.append<u16>(args.size() + 1, Endian::Big);
-    code.append<u16>(vars.size(), Endian::Big);
+
+    if (name != "main") {
+        code.append<u16>(args.size() + 1, Endian::Big);
+        code.append<u16>(vars.size(), Endian::Big);
+    }
 
     this->vars.clear();
-    this->vars.push_back("OBJREF");
+
+    if (name != "main")
+        this->vars.push_back("OBJREF");
+
     this->vars.insert(this->vars.end(), args.begin(), args.end());
     this->vars.insert(this->vars.end(), vars.begin(), vars.end());
 }
@@ -161,7 +165,7 @@ void IJVMAssembler::IINC(string var, int8_t value) {
 void IJVMAssembler::ISTORE(string var) {
     int index = indexOf(vars, var);
     if (index < 0)
-        throw std::runtime_error{"Tried calling ISTORE on none-existing var"};
+        throw std::runtime_error{sprint("Tried calling ISTORE on none-existing var %s", var.c_str())};
 
     if (index > 255)
         WIDE();

@@ -5,9 +5,12 @@
 
 #include <frontends/ij/compile.hpp>
 #include <frontends/jas/compile.hpp>
+#include <frontends/ijvm/compile.hpp>
+
 #include <backends/ijvm_assembler.hpp>
 #include <backends/jas_assembler.hpp>
 #include <backends/x64_assembler.hpp>
+
 #include <util/logger.hpp>
 
 struct options {
@@ -198,6 +201,32 @@ static void compile_to_file(options &o, Assembler &a) {
     }
 }
 
+static void handle_input(options o, Assembler &a) {
+    if (endswith(o.src_file, ".ijvm")) {
+        log.info("Compiling src file %s as ijvm", o.src_file.c_str());
+        Buffer b{1024};
+
+        b.map_file(o.src_file);
+        ijvm_compile(b, a);
+        return;
+    }
+
+    Lexer l;
+    l.add_source(o.src_file);
+
+    if (endswith(o.src_file, ".jas")) {
+        log.info("Compiling src file %s as jas", o.src_file.c_str());
+        jas_compile(l, a);
+    }
+    else if (endswith(o.src_file, ".ij")) {
+        log.info("Compiling src file %s as ij", o.src_file.c_str());
+        ij_compile(l, a);
+    }
+    else
+        log.panic("Can't parse file %s, extension unknown!", o.src_file.c_str());
+
+}
+
 int main(int argc, char **argv) {
     options o;
     parse_options(args(argc, argv), o);
@@ -211,23 +240,8 @@ int main(int argc, char **argv) {
     else
         a = std::make_unique<X64Assembler>();
 
-    Lexer l;
-
     try {
-        l.add_source(o.src_file);
-
-        if (endswith(o.src_file, ".jas")) {
-            log.info("Compiling src file %s as jas", o.src_file.c_str());
-            jas_compile(l, *a);
-        }
-        else if (endswith(o.src_file, ".ij")) {
-            log.info("Compiling src file %s as ij", o.src_file.c_str());
-            ij_compile(l, *a);
-        }
-        // else if (endswith(o.src_file, ".ijvm"))
-        //     ijvm_compile(l, *a);
-        else
-            log.panic("Can't parse file with that extension!");
+        handle_input(o, *a);
 
         if (o.run) {
             x64_run(o, *a);

@@ -28,8 +28,8 @@ class Assembler {
     label(string name) = 0; /* adds label before next instruction */
 
     /* ends previous function and adds new function */
-    virtual void function(string name, vector<string> args,
-                          vector<string> vars) = 0;
+    virtual void function(string name, vector<string> args, vector<string> vars) = 0;
+
     virtual bool
     is_var(string name) = 0; /* returns whether there is a variable in the
                                 current context (local and args) */
